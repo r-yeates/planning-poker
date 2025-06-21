@@ -20,9 +20,9 @@ export default function VotingCards({
   const isSpectator = userId && room?.participants[userId]?.role === 'spectator';
 
   return (
-    <>
+    <div className="space-y-4">
       {/* Anonymous Voting Indicator */}
-      {room.anonymousVoting && !room.votesRevealed && (
+      {room.anonymousVoting && (
         <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 p-3 rounded-lg">
           <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,7 +44,8 @@ export default function VotingCards({
             You can observe the voting process but cannot participate. Click the toggle above to switch back to voting mode.
           </p>
         </div>
-      ) : (        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-11 gap-2">
+      ) : (
+        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-11 gap-2">
           {(() => {
             const currentScale = room.scaleType || 'fibonacci';
             const tooltips = SCALE_TOOLTIPS[currentScale];
@@ -66,6 +67,6 @@ export default function VotingCards({
           })()}
         </div>
       )}
-    </>
+    </div>
   );
 }
