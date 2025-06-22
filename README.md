@@ -19,7 +19,7 @@ Built with **Next.js**, **Tailwind CSS**, and **Firebase Firestore**.
 - **Visual Vote Indicators**: Clear visual feedback when players have voted
 - **Smart Average Calculation**: Automatically excludes non-numeric votes (?, ☕) from averages
 - **Special Cards**: Support for "?" (unsure) and "☕" (break) cards
-- **Vote Progress**: Real-time display of voting progress
+- **Vote Progress Indicator**: Real-time progress bar showing "X/Y voted" with visual completion status
 - **Anonymous Voting**: Hide voter identities to reduce bias and peer pressure
 
 ### User Interface

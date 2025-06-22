@@ -5,6 +5,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ESTIMATION_SCALES, ScaleType } from '@/lib/estimation-scales';
 import type { Room } from '@/lib/firebase';
+import VoteProgressIndicator from './VoteProgressIndicator';
 
 interface AdminPanelProps {
   room: Room;
@@ -91,6 +92,11 @@ export default function AdminPanel({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
+
+      {/* Vote Progress - Always Visible */}
+      <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700">
+        <VoteProgressIndicator room={room} compact={true} showDetails={false} />
+      </div>
 
       {/* Collapsible Content */}
       {!isCollapsed && (

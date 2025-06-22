@@ -10,7 +10,7 @@ import packageJson from '../package.json';
 import ThemeToggle from './components/ThemeToggle';
 import FeatureCarousel from './components/FeatureCarousel';
 import Link from 'next/link';
-import TextTransition, { presets } from 'react-text-transition';
+import TextTransition from 'react-text-transition';
 
 // Room Templates Configuration
 interface RoomTemplate {
@@ -184,8 +184,9 @@ export default function HomePage() {
       // Track analytics
       await trackRoomCreatedSafe();
 
-      // Set verification flag for auto-join
+      // Set verification flag for auto-join and mark as room creator
       sessionStorage.setItem('roomJoinVerified', roomCode);
+      sessionStorage.setItem('roomCreator', roomCode); // Mark this user as the creator
 
       router.push(`/room/${roomCode}`);
     } catch (error) {
@@ -239,17 +240,80 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-950 dark:to-indigo-950">
+    <>
+      {/* Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "Scrint",
+            "description": "Free online planning poker tool for agile teams. Estimate user stories, eliminate bias, and reach consensus faster.",
+            "url": "https://scrint.dev",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Any",
+            "browserRequirements": "Modern web browser with JavaScript support",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD",
+              "availability": "https://schema.org/InStock"
+            },
+            "featureList": [
+              "Real-time collaborative estimation",
+              "Anonymous voting options",
+              "Multiple estimation scales (Fibonacci, T-Shirt, Powers of Two)",
+              "Team consensus analysis",
+              "Room templates for different scenarios",
+              "No signup required",
+              "Mobile responsive design",
+              "Dark and light themes"
+            ],
+            "audience": {
+              "@type": "Audience",
+              "audienceType": "Agile development teams, Scrum masters, Product owners"
+            },
+            "creator": {
+              "@type": "Organization",
+              "name": "Scrint",
+              "url": "https://scrint.dev"
+            }
+          })
+        }}
+      />
+      
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-950 dark:to-indigo-950">
       {/* Navigation Bar */}
       <nav className="flex items-center justify-between p-6 max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-lg">PP</span>
-          </div>
-          <span className="font-bold text-xl text-gray-900 dark:text-white">Planning Poker</span>
+          <img 
+            src="/logo.png" 
+            alt="Scrint Logo" 
+            className="w-10 h-10 rounded-xl"
+          />
+          <span className="font-bold text-xl text-gray-900 dark:text-white">Scrint.dev</span>
         </div>
         
         <div className="flex items-center gap-4">
+          <Link
+            href="/blog"
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+            Blog
+          </Link>
+          <Link
+            href="/faq"
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            FAQ
+          </Link>
           <Link
             href="/analytics"
             className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -268,26 +332,25 @@ export default function HomePage() {
         <div className="text-center mb-16">
           
           <h1 className="text-5xl md:text-7xl font-bold">
-            <span className="text-gray-900 dark:text-white">Plan</span>
-            <span className="text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text"> Together</span>
+            <span className="text-gray-900 dark:text-white">Estimate</span>
+            <span className="text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text"> Smart</span>
           </h1>
           
           <div className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-4xl mx-auto mb-16 h-16 flex items-center justify-center overflow-hidden">
-            <TextTransition springConfig={presets.gentle} className="text-center whitespace-nowrap">
+            <TextTransition className="text-center whitespace-nowrap">
               {heroTexts[heroTextIndex]}
             </TextTransition>
           </div>
 
           {/* Floating Cards Animation */}
-          <div className="relative max-w-md mx-auto mb-16">
-            <div className="grid grid-cols-5 gap-2 transform rotate-6">
+          <div className="relative max-w-md mx-auto mb-16 z-10">
+            <div className="grid grid-cols-5 gap-2">
               {['1', '2', '3', '5', '8'].map((value, index) => (
                 <div 
                   key={value}
-                  className={`aspect-[3/4] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center font-bold text-lg animate-bounce`}
+                  className={`aspect-[3/4] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center font-bold text-lg transform hover:scale-110 hover:-translate-y-2 hover:rotate-2 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 cursor-pointer relative z-10`}
                   style={{ 
-                    animationDelay: `${index * 0.2}s`,
-                    animationDuration: '2s'
+                    animation: `cardFloat 3s ease-in-out infinite ${index * 0.15}s, cardGlow 4s ease-in-out infinite ${index * 0.2}s`,
                   }}
                 >
                   {value}
@@ -299,9 +362,9 @@ export default function HomePage() {
         </div>
 
         {/* Quick Start Section */}
-        <div className="relative mb-24">
+        <div className="relative mb-24 z-0">
           {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-5 dark:opacity-10">
+          <div className="absolute inset-0 opacity-5 dark:opacity-10 z-0">
             <svg width="100%" height="100%" viewBox="0 0 100 100" className="h-full">
               <defs>
                 <pattern id="dots" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
@@ -312,9 +375,9 @@ export default function HomePage() {
             </svg>
           </div>
 
-          <div className="relative">
+          <div className="relative z-10">
             <div className="text-center mb-16">
-              <h3 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+              <h3 id="choose-template" className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
                 Choose Your <span className="text-blue-600 dark:text-blue-400">Style</span>
               </h3>
               <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
@@ -323,13 +386,13 @@ export default function HomePage() {
             </div>
 
             {/* Template Selection */}
-            <div className="grid lg:grid-cols-3 gap-6 mb-20">
+            <div className="grid lg:grid-cols-3 gap-6 mb-20 relative">
               <div className="group relative h-full">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-500 z-0"></div>
                 <button
                   onClick={() => createRoomWithTemplate('sprint-planning')}
                   disabled={isCreating || isJoining}
-                  className="relative bg-white dark:bg-gray-900 p-8 rounded-3xl border-2 border-blue-100 dark:border-blue-900 hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full text-left h-full flex flex-col"
+                  className="relative bg-white dark:bg-gray-900 p-8 rounded-3xl border-2 border-blue-100 dark:border-blue-900 hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full text-left h-full flex flex-col z-10"
                 >
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-2xl flex items-center justify-center text-3xl transform group-hover:rotate-12 transition-transform duration-300">
@@ -350,11 +413,11 @@ export default function HomePage() {
               </div>
 
               <div className="group relative h-full">
-                <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-500 z-0"></div>
                 <button
                   onClick={() => createRoomWithTemplate('bug-triage')}
                   disabled={isCreating || isJoining}
-                  className="relative bg-white dark:bg-gray-900 p-8 rounded-3xl border-2 border-orange-100 dark:border-orange-900 hover:border-orange-300 dark:hover:border-orange-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full text-left h-full flex flex-col"
+                  className="relative bg-white dark:bg-gray-900 p-8 rounded-3xl border-2 border-orange-100 dark:border-orange-900 hover:border-orange-300 dark:hover:border-orange-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full text-left h-full flex flex-col z-10"
                 >
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900 rounded-2xl flex items-center justify-center text-3xl transform group-hover:rotate-12 transition-transform duration-300">
@@ -375,11 +438,11 @@ export default function HomePage() {
               </div>
 
               <div className="group relative h-full">
-                <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-500 z-0"></div>
                 <button
                   onClick={() => createRoomWithTemplate('story-refinement')}
                   disabled={isCreating || isJoining}
-                  className="relative bg-white dark:bg-gray-900 p-8 rounded-3xl border-2 border-purple-100 dark:border-purple-900 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full text-left h-full flex flex-col"
+                  className="relative bg-white dark:bg-gray-900 p-8 rounded-3xl border-2 border-purple-100 dark:border-purple-900 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full text-left h-full flex flex-col z-10"
                 >
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-2xl flex items-center justify-center text-3xl transform group-hover:rotate-12 transition-transform duration-300">
@@ -414,8 +477,8 @@ export default function HomePage() {
               <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-12">
                 {/* Create Custom Room */}
                 <div className="group relative h-full">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-700"></div>
-                  <div className="relative bg-white dark:bg-gray-900 p-10 rounded-[2rem] border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-700 z-0"></div>
+                  <div className="relative bg-white dark:bg-gray-900 p-10 rounded-[2rem] border border-gray-200 dark:border-gray-700 h-full flex flex-col z-10">
                     <div className="text-center mb-8">
                       <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-6 shadow-lg">
                         <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -622,15 +685,13 @@ export default function HomePage() {
         <div className="py-24">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-20">
-
               <h2 className="text-4xl md:text-6xl font-bold mb-6">
-                <span className="text-gray-900 dark:text-white">Stop the</span>
-                <span className="text-transparent bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text"> Estimation</span>
-                <br />
+                <span className="text-gray-900 dark:text-white">Stop the </span>
+                <span className="text-transparent bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text">Estimation </span>
                 <span className="text-transparent bg-gradient-to-r from-red-600 via-orange-600 to-yellow-600 bg-clip-text">Chaos</span>
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-                Real teams share how Planning Poker transformed their sprints from painful marathons into focused power sessions
+                Transform your agile estimation from chaotic marathons into focused power sessions with Scrint
               </p>
             </div>
 
@@ -685,7 +746,7 @@ export default function HomePage() {
                       <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                       <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
                       <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                      <span className="ml-auto text-sm text-gray-500 dark:text-gray-400 font-mono">planning-poker.live</span>
+                      <span className="ml-auto text-sm text-gray-500 dark:text-gray-400 font-mono">scrint.dev</span>
                     </div>
                     
                     <div className="space-y-4">
@@ -721,121 +782,17 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Social Proof - Redesigned Testimonials */}
-            <div className="text-center mb-12">
-              <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-                Real Teams, Real Results
-              </h3>
-              <p className="text-lg text-gray-600 dark:text-gray-300 mb-12">
-                From chaotic estimation meetings to smooth, predictable planning sessions
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-              {/* Testimonial 1 - Redesigned */}
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
-                <div className="relative bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center mb-6">
-                    <div className="relative">
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">SC</span>
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center">
-                        <span className="text-white text-xs">✓</span>
-                      </div>
-                    </div>
-                    <div className="ml-4">
-                      <div className="font-bold text-gray-900 dark:text-white">Sarah Chen</div>
-                      <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Lead Developer, TechCorp</div>
-                      <div className="flex items-center mt-1">
-                        <span className="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">6 months ago</span>
-                      </div>
-                    </div>
-                  </div>
-                  <blockquote className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                    "Absolute game changer! Cut our sprint planning from <span className="bg-red-100 dark:bg-red-900/30 px-1 rounded text-red-700 dark:text-red-300">4 painful hours</span> to <span className="bg-green-100 dark:bg-green-900/30 px-1 rounded text-green-700 dark:text-green-300">1 focused hour</span>. Team alignment is through the roof."
-                  </blockquote>
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Team of 8 developers</span>
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">75% time saved</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Testimonial 2 - Redesigned */}
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
-                <div className="relative bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center mb-6">
-                    <div className="relative">
-                      <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">MR</span>
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center">
-                        <span className="text-white text-xs">✓</span>
-                      </div>
-                    </div>
-                    <div className="ml-4">
-                      <div className="font-bold text-gray-900 dark:text-white">Mike Rodriguez</div>
-                      <div className="text-sm text-green-600 dark:text-green-400 font-medium">Scrum Master, StartupXYZ</div>
-                      <div className="flex items-center mt-1">
-                        <span className="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">3 months ago</span>
-                      </div>
-                    </div>
-                  </div>
-                  <blockquote className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                    "Finally, no more endless debates! Everyone gets heard equally, and we reach consensus <span className="bg-blue-100 dark:bg-blue-900/30 px-1 rounded text-blue-700 dark:text-blue-300">lightning fast</span>. Silent voting is pure magic."
-                  </blockquote>
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Cross-functional team</span>
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">100% consensus rate</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Testimonial 3 - Redesigned */}
-              <div className="relative group md:col-span-2 lg:col-span-1">
-                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
-                <div className="relative bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center mb-6">
-                    <div className="relative">
-                      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">AJ</span>
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center">
-                        <span className="text-white text-xs">✓</span>
-                      </div>
-                    </div>
-                    <div className="ml-4">
-                      <div className="font-bold text-gray-900 dark:text-white">Alex Johnson</div>
-                      <div className="text-sm text-purple-600 dark:text-purple-400 font-medium">Product Owner, InnovateCo</div>
-                      <div className="flex items-center mt-1">
-                        <span className="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">2 weeks ago</span>
-                      </div>
-                    </div>
-                  </div>
-                  <blockquote className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                    "Velocity predictions improved by <span className="bg-purple-100 dark:bg-purple-900/30 px-1 rounded text-purple-700 dark:text-purple-300 font-bold">40%</span>! The consensus indicator shows exactly when we need to discuss more. Data-driven estimation at its finest."
-                  </blockquote>
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Product team of 12</span>
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">40% accuracy boost</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Call to Action */}
             <div className="text-center">
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 rounded-full text-white font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg">
-                <span className="text-2xl">🚀</span>
-                Join 10,000+ Teams
-                <span className="text-2xl">⚡</span>
-              </div>
+              <button
+                onClick={() => {
+                  document.getElementById('choose-template')?.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                  });
+                }}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 rounded-full text-white font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer">Start Planning Better
+              </button>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
                 No signup required • Free forever • Start in 30 seconds
               </p>
@@ -843,6 +800,138 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Content Marketing Section */}
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Master Planning Poker
+          </h2>
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+            Learn expert techniques, avoid common mistakes, and run more effective estimation sessions
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Blog Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Expert Insights</h3>
+            </div>
+            
+            <div className="space-y-4 mb-6">
+              <div className="border-l-4 border-blue-500 pl-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white">Planning Poker Basics</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Complete guide for beginners</p>
+              </div>
+              <div className="border-l-4 border-purple-500 pl-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white">Common Estimation Mistakes</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">7 pitfalls and how to avoid them</p>
+              </div>
+              <div className="border-l-4 border-green-500 pl-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white">Remote Planning Poker</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Tools and techniques for distributed teams</p>
+              </div>
+            </div>
+            
+            <Link 
+              href="/blog"
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            >
+              Read Blog Articles
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </Link>
+          </div>
+
+          {/* FAQ Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Quick Answers</h3>
+            </div>
+            
+            <div className="space-y-4 mb-6">
+              <div className="border-l-4 border-purple-500 pl-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white">What are story points?</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Understanding relative estimation</p>
+              </div>
+              <div className="border-l-4 border-blue-500 pl-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white">How to handle disagreements?</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Building team consensus</p>
+              </div>
+              <div className="border-l-4 border-green-500 pl-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white">Best practices for remote teams?</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Tools and engagement techniques</p>
+              </div>
+            </div>
+            
+            <Link 
+              href="/faq"
+              className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            >
+              View All FAQs
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Simple Footer */}
+      <footer className="border-t border-gray-200 dark:border-gray-700 py-8">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <img 
+                src="/logo.png" 
+                alt="Scrint Logo" 
+                className="w-6 h-6 rounded-lg"
+              />
+              <span className="font-semibold text-gray-900 dark:text-white">Scrint.dev</span>
+            </div>
+            
+            <div className="flex items-center gap-6 text-sm">
+              <Link
+                href="/blog"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Blog
+              </Link>
+              <Link
+                href="/faq"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                FAQ
+              </Link>
+              <Link
+                href="/analytics"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Analytics
+              </Link>
+              <Link
+                href="/legal"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Legal
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
+      </div>
+    </>
   );
 }

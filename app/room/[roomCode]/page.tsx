@@ -36,36 +36,7 @@ export default function RoomPage() {
   const [showNewRoundNotification, setShowNewRoundNotification] = useState(false);
   const [isNotificationVisible, setIsNotificationVisible] = useState(false);
   const [previousRoundState, setPreviousRoundState] = useState<{votesRevealed: boolean; hasVotes: boolean} | null>(null);
-  const [showDemoNotification, setShowDemoNotification] = useState(false);
-  const [demoMessage, setDemoMessage] = useState('');
-  const [showConfetti, setShowConfetti] = useState(false);
-
-  // Demo notification effect - show demo messages for demo rooms
-  useEffect(() => {
-    if (room?.participants['demo-user-1']) { // This is a demo room
-      // Listen for vote changes to show demo progression
-      const voteCount = Object.keys(room.votes || {}).length;
-      const totalVoters = Object.values(room.participants).filter(p => p.role === 'voter').length;
-      
-      if (voteCount === 0) {
-        setDemoMessage('🎭 Demo starting... Watch the team vote!');
-        setShowDemoNotification(true);
-        setTimeout(() => setShowDemoNotification(false), 3000);
-      } else if (voteCount > 0 && voteCount < totalVoters) {
-        setDemoMessage(`🗳️ ${voteCount}/${totalVoters} team members have voted...`);
-        setShowDemoNotification(true);
-        setTimeout(() => setShowDemoNotification(false), 2000);
-      } else if (voteCount === totalVoters && !room.votesRevealed) {
-        setDemoMessage('✅ Everyone voted! Revealing in a moment...');
-        setShowDemoNotification(true);
-        setTimeout(() => setShowDemoNotification(false), 2000);
-      } else if (room.votesRevealed) {
-        setDemoMessage('📊 Check the consensus analysis below!');
-        setShowDemoNotification(true);
-        setTimeout(() => setShowDemoNotification(false), 4000);
-      }
-    }
-  }, [room?.votes, room?.votesRevealed, room?.participants]);
+  const [isLeavingRoom, setIsLeavingRoom] = useState(false);
 
   // Initialize userId from localStorage
   useEffect(() => {
@@ -89,6 +60,8 @@ export default function RoomPage() {
   // Look up room by code and set up room listener
   useEffect(() => {
     if (!roomCode || !userId) return;
+
+    let unsubscribeRef: (() => void) | null = null;
 
     const lookupAndSubscribe = async () => {
       setIsLoading(true);
@@ -120,6 +93,7 @@ export default function RoomPage() {
               } else {
                 // Check if user was just redirected from home page (verified)
                 const isVerified = sessionStorage.getItem('roomJoinVerified');
+                const isCreator = sessionStorage.getItem('roomCreator');
                 const userName = localStorage.getItem('userName');
                 
                 if (!userName) {
@@ -128,6 +102,10 @@ export default function RoomPage() {
                 } else if (isVerified === roomCode) {
                   // Clear the verification flag and mark for auto-join
                   sessionStorage.removeItem('roomJoinVerified');
+                  // Clear creator flag if it exists
+                  if (isCreator === roomCode) {
+                    sessionStorage.removeItem('roomCreator');
+                  }
                   // Set a flag to auto-join once everything is loaded
                   setShowNamePrompt(false);
                   setHasJoined(false);
@@ -148,6 +126,7 @@ export default function RoomPage() {
           }
         );
 
+        unsubscribeRef = unsubscribe;
         return unsubscribe;
       } catch (error) {
         console.error('Error looking up room:', error);
@@ -157,6 +136,14 @@ export default function RoomPage() {
     };
 
     lookupAndSubscribe();
+
+    // Cleanup function
+    return () => {
+      if (unsubscribeRef) {
+        console.log('Cleaning up room subscription');
+        unsubscribeRef();
+      }
+    };
   }, [roomCode, userId]);
 
   // Update isAdmin status whenever room or userId changes
@@ -373,8 +360,9 @@ export default function RoomPage() {
       return;
     }
 
-    // Check password if room is password-protected
-    if (room.password) {
+    // Check password if room is password-protected (unless user is the creator)
+    const isCreator = sessionStorage.getItem('roomCreator') === room.roomCode;
+    if (room.password && !isCreator) {
       console.log('🔒 Room is password protected, checking password...');
       if (!password) {
         console.log('❌ No password provided for protected room');
@@ -397,6 +385,10 @@ export default function RoomPage() {
         setPasswordError('Error verifying password. Please try again.');
         return;
       }
+    } else if (isCreator) {
+      console.log('🎉 User is room creator, skipping password check');
+      // Clear the creator flag after first use
+      sessionStorage.removeItem('roomCreator');
     }    console.log('✅ All checks passed, joining room...');
     setPasswordError(''); // Clear any previous password errors
     setJoining(true);
@@ -427,34 +419,6 @@ export default function RoomPage() {
     } finally {
       setJoining(false);
     }  };
-
-  useEffect(() => {
-    if (!roomId) return;
-
-    const unsubscribe = onSnapshot(
-      doc(db, 'rooms', roomId),
-      (doc) => {
-        if (doc.exists()) {
-          setRoom(doc.data() as Room);
-        } else {
-          setError('Room not found');
-        }
-      },
-      (error) => {
-        console.error('Error fetching room:', error);
-        setError('Error loading room');
-      }
-    );
-
-    return () => unsubscribe();
-  }, [roomId]);
-
-  useEffect(() => {
-    // Update isAdmin status whenever room or userId changes
-    if (room && userId) {
-      setIsAdmin(room.participants[userId]?.isHost || false);
-    }
-  }, [room, userId]);
 
   const handleKickParticipant = async (participantId: string) => {
     if (!room || !roomId || !isAdmin) return;
@@ -490,6 +454,7 @@ export default function RoomPage() {
       console.error('Error revealing votes:', error);
     }
   };
+  
   const handleReset = async () => {
     if (!room || !roomId) return;
 
@@ -532,6 +497,7 @@ export default function RoomPage() {
       console.error('Error toggling role:', error);
     }
   };
+  
   const handleCloseNotification = () => {
     // Start exit animation
     setIsNotificationVisible(false);
@@ -540,9 +506,12 @@ export default function RoomPage() {
       setShowNewRoundNotification(false);
     }, 500);
   };
+  
   const handleLeaveRoom = async () => {
     if (!room || !roomId || !userId) return;
 
+    setIsLeavingRoom(true); // Prevent error states while leaving
+    
     try {
       const { [userId]: removed, ...remainingParticipants } = room.participants;
       const { [userId]: removedVote, ...remainingVotes } = room.votes || {};
@@ -579,12 +548,15 @@ export default function RoomPage() {
       setShowNamePrompt(false);
       setRoom(null);
       setRoomId(null);
+      setError(''); // Clear any errors
       localStorage.removeItem('userName'); // Remove stored username to prevent auto-join
       
-      // Navigate to home page
+      // Navigate to home page immediately to prevent error states
       router.push('/');
     } catch (error) {
       console.error('Error leaving room:', error);
+      // Even if there's an error, navigate away to prevent getting stuck
+      router.push('/');
     }  };
 
   // Auto-join effect for users coming from home page
@@ -614,7 +586,7 @@ export default function RoomPage() {
     );
   }
 
-  if (error) {
+  if (error && !isLeavingRoom) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -631,11 +603,14 @@ export default function RoomPage() {
     );
   }
   if (showNamePrompt) {
+    const isCreator = sessionStorage.getItem('roomCreator') === room?.roomCode;
+    const requiresPassword = !!room?.password && !isCreator;
+    
     return (
       <NamePrompt 
         onSubmit={handleNameSubmit} 
         isLoading={joining}
-        requiresPassword={!!room?.password}
+        requiresPassword={requiresPassword}
         passwordError={passwordError}
       />
     );
@@ -723,7 +698,14 @@ export default function RoomPage() {
       <div className="max-w-7xl mx-auto mb-8">
         {/* Header with theme toggle */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">🃏 Planning Poker</h1>
+          <div className="flex items-center gap-3">
+            <img 
+              src="/logo.png" 
+              alt="Scrint Logo" 
+              className="w-8 h-8 rounded-lg"
+            />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Scrint</h1>
+          </div>
             {/* Room Info and Admin Controls */}
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -818,12 +800,19 @@ export default function RoomPage() {
             
             {/* Participants Section */}
             <div>
-              <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-                </svg>
-                Participants ({Object.keys(room?.participants || {}).length})
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                  </svg>
+                  Participants ({Object.keys(room?.participants || {}).length})
+                </h3>
+                {!room.votesRevealed && voterCount > 0 && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {votedCount}/{voterCount} voted
+                  </div>
+                )}
+              </div>
               <div className="space-y-3">
                   {Object.entries(room.participants)
                     .sort(([, a], [, b]) => (a.isHost ? -1 : b.isHost ? 1 : 0))
@@ -857,7 +846,9 @@ export default function RoomPage() {
             <h2 className="text-base font-medium text-gray-700 dark:text-gray-300">Current Ticket</h2>
             <p className="text-lg text-gray-900 dark:text-gray-100">{room.currentTicket}</p>
           </div>
-        )}        {/* Average Vote Display */}
+        )}
+        
+        {/* Average Vote Display */}
         {room.votesRevealed && averageVote !== null && (
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
             <h2 className="text-base font-medium text-gray-700 dark:text-gray-300">Average Vote</h2>
@@ -1050,26 +1041,12 @@ export default function RoomPage() {
         </div>
       )}
 
-      {/* Demo Progression Notification */}
-      {showDemoNotification && (
-        <div className="fixed top-4 right-4 z-50 transition-all duration-300 ease-out">
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 max-w-[300px] border border-purple-500/20">
-            <div className="bg-white/20 rounded-full p-1">
-              <span className="text-lg">🎭</span>
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-medium">{demoMessage}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Name Prompt Modal */}
       {showNamePrompt && room && (
         <NamePrompt
           onSubmit={handleNameSubmit}
           isLoading={joining}
-          requiresPassword={!!room?.password}
+          requiresPassword={!!room?.password && sessionStorage.getItem('roomCreator') !== room.roomCode}
           passwordError={passwordError}
         />
       )}

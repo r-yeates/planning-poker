@@ -1,10 +1,14 @@
 'use client';
 
+import { Metadata } from 'next'
 import { useState, useEffect } from 'react';
 import { getGlobalAnalytics, getDailyAnalytics, initializeAnalytics } from '@/lib/firebase';
 import type { GlobalAnalytics, DailyAnalytics } from '@/lib/firebase';
 import ThemeToggle from '../components/ThemeToggle';
 import Link from 'next/link';
+
+// Note: Since this is a client component, metadata should be handled by layout
+// This export won't work in a client component, but I'll add it for reference
 
 export default function AnalyticsPage() {
   const [globalStats, setGlobalStats] = useState<GlobalAnalytics | null>(null);

@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /analytics
+Allow: /legal
+
+# Disallow room pages as they contain private planning sessions
+Disallow: /room/
+
+# Allow sitemap
+Sitemap: https://scrint.com/sitemap.xml
+
+# Crawl delay to be respectful
+Crawl-delay: 1
