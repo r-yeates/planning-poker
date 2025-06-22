@@ -1,484 +1,244 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import ThemeToggle from '../../components/ThemeToggle'
 
 // Blog post data - in a real app, this would come from a CMS or database
 const blogPosts = {
   'planning-poker-basics': {
     title: 'Planning Poker Basics: A Complete Guide for Beginners',
-    content: `
-      <h2>What is Planning Poker?</h2>
-      <p>Planning poker is a consensus-based estimation technique used in agile software development. It combines expert opinion, analogy, and disagreement to create accurate estimates for user stories and features.</p>
-      
-      <h2>How It Works</h2>
-      <p>Team members select cards representing their estimates for the effort required to complete a user story. Cards typically use the Fibonacci sequence (1, 2, 3, 5, 8, 13, 21) to reflect the uncertainty in larger estimates.</p>
-      
-      <h3>The Process:</h3>
-      <ol>
-        <li><strong>Present the Story:</strong> The product owner or scrum master explains the user story</li>
-        <li><strong>Ask Questions:</strong> Team members clarify requirements and assumptions</li>
-        <li><strong>Estimate Privately:</strong> Each member selects a card without revealing it</li>
-        <li><strong>Reveal Simultaneously:</strong> All cards are shown at once</li>
-        <li><strong>Discuss Differences:</strong> Focus on the highest and lowest estimates</li>
-        <li><strong>Re-estimate:</strong> Repeat until consensus is reached</li>
-      </ol>
-      
-      <h2>Benefits of Planning Poker</h2>
-      <ul>
-        <li><strong>Reduces Anchoring:</strong> Prevents the first estimate from influencing others</li>
-        <li><strong>Encourages Discussion:</strong> Differences in estimates lead to valuable conversations</li>
-        <li><strong>Engages Everyone:</strong> All team members participate in the estimation process</li>
-        <li><strong>Improves Accuracy:</strong> Collective wisdom often beats individual estimates</li>
-      </ul>
-      
-      <h2>Getting Started</h2>
-      <p>To run your first planning poker session:</p>
-      <ol>
-        <li>Gather your development team (5-9 people work best)</li>
-        <li>Prepare a backlog of user stories</li>
-        <li>Choose an estimation scale (Fibonacci is most common)</li>
-        <li>Set up your planning poker tool</li>
-        <li>Start with a reference story everyone understands</li>
-      </ol>
-      
-      <h2>Common Pitfalls to Avoid</h2>
-      <ul>
-        <li>Don't rush the discussion phase</li>
-        <li>Avoid averaging different estimates</li>
-        <li>Don't estimate stories that are too large (split them first)</li>
-        <li>Keep sessions to 2 hours maximum</li>
-      </ul>
-    `,
     date: '2025-06-20',
     readTime: '8 min read',
     tags: ['Basics', 'Getting Started', 'Agile'],
+    excerpt: 'Learn the fundamentals of planning poker, from basic rules to advanced techniques for better estimations.',
+    content: () => (
+      <div className="space-y-8">
+        <section>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">What is Planning Poker?</h2>
+          <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
+            Planning poker is a consensus-based estimation technique used in agile software development. It combines expert opinion, analogy, and disagreement to create accurate estimates for user stories and features.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">How It Works</h2>
+          <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
+            Team members select cards representing their estimates for the effort required to complete a user story. Cards typically use the Fibonacci sequence (1, 2, 3, 5, 8, 13, 21) to reflect the uncertainty in larger estimates.
+          </p>
+          
+          <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">The Process:</h3>
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 mb-6">
+            <ol className="space-y-4">
+              <li className="flex gap-4">
+                <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1</span>
+                <div>
+                  <strong className="text-gray-900 dark:text-white">Present the Story:</strong>
+                  <span className="text-gray-700 dark:text-gray-300 ml-2">The product owner or scrum master explains the user story</span>
+                </div>
+              </li>
+              <li className="flex gap-4">
+                <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">2</span>
+                <div>
+                  <strong className="text-gray-900 dark:text-white">Ask Questions:</strong>
+                  <span className="text-gray-700 dark:text-gray-300 ml-2">Team members clarify requirements and assumptions</span>
+                </div>
+              </li>
+              <li className="flex gap-4">
+                <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">3</span>
+                <div>
+                  <strong className="text-gray-900 dark:text-white">Estimate Privately:</strong>
+                  <span className="text-gray-700 dark:text-gray-300 ml-2">Each member selects a card without revealing it</span>
+                </div>
+              </li>
+              <li className="flex gap-4">
+                <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">4</span>
+                <div>
+                  <strong className="text-gray-900 dark:text-white">Reveal Simultaneously:</strong>
+                  <span className="text-gray-700 dark:text-gray-300 ml-2">All cards are shown at once</span>
+                </div>
+              </li>
+              <li className="flex gap-4">
+                <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">5</span>
+                <div>
+                  <strong className="text-gray-900 dark:text-white">Discuss Differences:</strong>
+                  <span className="text-gray-700 dark:text-gray-300 ml-2">Focus on the highest and lowest estimates</span>
+                </div>
+              </li>
+              <li className="flex gap-4">
+                <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">6</span>
+                <div>
+                  <strong className="text-gray-900 dark:text-white">Re-estimate:</strong>
+                  <span className="text-gray-700 dark:text-gray-300 ml-2">Repeat until consensus is reached</span>
+                </div>
+              </li>
+            </ol>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Benefits of Planning Poker</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-6">
+              <h3 className="text-xl font-semibold text-green-900 dark:text-green-100 mb-3">✓ Reduces Anchoring</h3>
+              <p className="text-green-800 dark:text-green-200">Prevents the first estimate from influencing others</p>
+            </div>
+            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-6">
+              <h3 className="text-xl font-semibold text-purple-900 dark:text-purple-100 mb-3">✓ Encourages Discussion</h3>
+              <p className="text-purple-800 dark:text-purple-200">Differences in estimates lead to valuable conversations</p>
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6">
+              <h3 className="text-xl font-semibold text-blue-900 dark:text-blue-100 mb-3">✓ Engages Everyone</h3>
+              <p className="text-blue-800 dark:text-blue-200">All team members participate in the estimation process</p>
+            </div>
+            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-6">
+              <h3 className="text-xl font-semibold text-orange-900 dark:text-orange-100 mb-3">✓ Improves Accuracy</h3>
+              <p className="text-orange-800 dark:text-orange-200">Collective wisdom often beats individual estimates</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Getting Started</h2>
+          <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
+            To run your first planning poker session:
+          </p>
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-6">
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3">
+                <span className="text-blue-600 dark:text-blue-400">→</span>
+                <span className="text-gray-700 dark:text-gray-300">Gather your development team (3-9 people works best)</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-blue-600 dark:text-blue-400">→</span>
+                <span className="text-gray-700 dark:text-gray-300">Prepare your user stories with clear acceptance criteria</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-blue-600 dark:text-blue-400">→</span>
+                <span className="text-gray-700 dark:text-gray-300">Choose your estimation scale (we recommend Fibonacci)</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-blue-600 dark:text-blue-400">→</span>
+                <span className="text-gray-700 dark:text-gray-300">Start with a simple story to calibrate the team</span>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Common Pitfalls to Avoid</h2>
+          <div className="space-y-4">
+            <div className="border-l-4 border-red-500 bg-red-50 dark:bg-red-900/20 p-4 rounded-r-lg">
+              <h3 className="font-semibold text-red-900 dark:text-red-100 mb-2">Don't discuss estimates before revealing</h3>
+              <p className="text-red-800 dark:text-red-200">This defeats the purpose of avoiding anchoring bias</p>
+            </div>
+            <div className="border-l-4 border-orange-500 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-r-lg">
+              <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-2">Avoid turning estimates into time commitments</h3>
+              <p className="text-orange-800 dark:text-orange-200">Planning poker estimates relative complexity, not precise duration</p>
+            </div>
+            <div className="border-l-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-r-lg">
+              <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Don't average different estimates</h3>
+              <p className="text-yellow-800 dark:text-yellow-200">Use discussion to understand the differences and reach true consensus</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Next Steps</h2>
+          <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
+            Ready to put these concepts into practice? Start your first planning poker session and experience the benefits of collaborative estimation.
+          </p>
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+            <h3 className="text-xl font-semibold mb-4">🚀 Try it yourself!</h3>
+            <p className="mb-4">Our free planning poker tool makes it easy to run sessions with your team, whether you're co-located or distributed.</p>
+            <Link 
+              href="/"
+              className="inline-flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+            >
+              Start a Session
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </Link>
+          </div>
+        </section>
+      </div>
+    )
   },
+  // Add other blog posts here...
   'common-estimation-mistakes': {
     title: '7 Common Planning Poker Mistakes and How to Avoid Them',
-    content: `
-      <h2>1. Anchoring on the First Estimate</h2>
-      <p>When someone shares their estimate before the reveal, it influences everyone else's thinking. Always keep estimates private until the simultaneous reveal.</p>
-      
-      <h2>2. Averaging Different Estimates</h2>
-      <p>When estimates differ significantly, don't just average them. The differences indicate important unknowns that need discussion.</p>
-      
-      <h2>3. Estimating Too Quickly</h2>
-      <p>Rushing through stories without proper discussion defeats the purpose. Take time to understand requirements and share different perspectives.</p>
-      
-      <h2>4. Including Non-Development Work</h2>
-      <p>Planning poker estimates should focus on development effort. Don't include testing, deployment, or other activities unless they're part of your definition of done.</p>
-      
-      <h2>5. Using Estimates as Commitments</h2>
-      <p>Estimates are not promises. They're best guesses based on current understanding. Treat them as such.</p>
-      
-      <h2>6. Estimating Stories That Are Too Large</h2>
-      <p>Epic-sized stories are hard to estimate accurately. Break them down into smaller, more manageable pieces first.</p>
-      
-      <h2>7. Not Involving the Right People</h2>
-      <p>Include everyone who will work on the story. Missing perspectives lead to incomplete estimates.</p>
-      
-      <h2>Best Practices</h2>
-      <ul>
-        <li>Keep sessions to 2 hours maximum</li>
-        <li>Take breaks every 45-60 minutes</li>
-        <li>Start with a reference story everyone knows</li>
-        <li>Focus on relative sizing, not absolute time</li>
-        <li>Record assumptions made during estimation</li>
-      </ul>
-    `,
     date: '2025-06-18',
     readTime: '6 min read',
     tags: ['Best Practices', 'Mistakes', 'Tips'],
-  },
-  'remote-planning-poker': {
-    title: 'Mastering Remote Planning Poker: Tools and Techniques',
-    content: `
-      <h2>The Remote Challenge</h2>
-      <p>Remote planning poker requires different strategies than in-person sessions. Without physical presence, you need to work harder to maintain engagement and ensure everyone participates.</p>
-      
-      <h2>Essential Tools</h2>
-      <h3>Video Conferencing</h3>
-      <ul>
-        <li>Use video calls to maintain visual connection</li>
-        <li>Ensure everyone has their camera on</li>
-        <li>Use screen sharing for story details</li>
-      </ul>
-      
-      <h3>Digital Planning Poker Tools</h3>
-      <ul>
-        <li>Web-based estimation tools (like Scrint!)</li>
-        <li>Real-time synchronization</li>
-        <li>Mobile-friendly interfaces</li>
-      </ul>
-      
-      <h2>Remote Best Practices</h2>
-      
-      <h3>Before the Session</h3>
-      <ul>
-        <li>Share user stories in advance</li>
-        <li>Test all technology beforehand</li>
-        <li>Send calendar invites with tool links</li>
-        <li>Prepare backup communication channels</li>
-      </ul>
-      
-      <h3>During the Session</h3>
-      <ul>
-        <li>Start with a quick check-in round</li>
-        <li>Use the "popcorn" method for questions</li>
-        <li>Take more frequent breaks</li>
-        <li>Actively encourage participation</li>
-      </ul>
-      
-      <h3>Managing Time Zones</h3>
-      <ul>
-        <li>Find overlapping hours that work for everyone</li>
-        <li>Rotate meeting times if needed</li>
-        <li>Record sessions for those who can't attend</li>
-        <li>Use asynchronous estimation for non-critical stories</li>
-      </ul>
-      
-      <h2>Keeping Everyone Engaged</h2>
-      <ul>
-        <li>Use breakout rooms for side discussions</li>
-        <li>Implement a "raise hand" system</li>
-        <li>Ask specific people for input</li>
-        <li>Use polls and reactions to gauge understanding</li>
-      </ul>
-      
-      <h2>Technology Tips</h2>
-      <ul>
-        <li>Have backup internet connections</li>
-        <li>Use headphones to avoid echo</li>
-        <li>Mute when not speaking</li>
-        <li>Keep phone numbers handy for backup</li>
-      </ul>
-    `,
-    date: '2025-06-15',
-    readTime: '10 min read',
-    tags: ['Remote Work', 'Tools', 'Collaboration'],
-  },
-  'fibonacci-vs-tshirt': {
-    title: 'Fibonacci vs T-Shirt Sizing: Choosing the Right Scale',
-    content: `
-      <h2>Understanding Estimation Scales</h2>
-      <p>The scale you choose for planning poker significantly impacts your team's estimation accuracy and comfort. Let's explore the most popular options.</p>
-      
-      <h2>Fibonacci Sequence (1, 2, 3, 5, 8, 13, 21)</h2>
-      
-      <h3>Pros:</h3>
-      <ul>
-        <li><strong>Reflects Uncertainty:</strong> Larger gaps match increased uncertainty in bigger tasks</li>
-        <li><strong>Prevents False Precision:</strong> You can't estimate something as 11 points</li>
-        <li><strong>Industry Standard:</strong> Most widely used in agile teams</li>
-        <li><strong>Mathematical Basis:</strong> Based on natural patterns</li>
-      </ul>
-      
-      <h3>Cons:</h3>
-      <ul>
-        <li>Can be confusing for new teams</li>
-        <li>Abstract numbers don't mean much initially</li>
-        <li>Requires calibration period</li>
-      </ul>
-      
-      <h2>T-Shirt Sizing (XS, S, M, L, XL, XXL)</h2>
-      
-      <h3>Pros:</h3>
-      <ul>
-        <li><strong>Intuitive:</strong> Everyone understands relative sizes</li>
-        <li><strong>Quick to Learn:</strong> No mathematical concepts needed</li>
-        <li><strong>Less Intimidating:</strong> Feels less precise and formal</li>
-        <li><strong>Good for High-Level:</strong> Perfect for epic or feature estimation</li>
-      </ul>
-      
-      <h3>Cons:</h3>
-      <ul>
-        <li>Can be too coarse for detailed estimation</li>
-        <li>Teams may want to add sizes (M+, L-, etc.)</li>
-        <li>Harder to convert to velocity calculations</li>
-      </ul>
-      
-      <h2>Other Popular Scales</h2>
-      
-      <h3>Powers of 2 (1, 2, 4, 8, 16, 32)</h3>
-      <ul>
-        <li>Good for technical teams</li>
-        <li>Clear doubling pattern</li>
-        <li>Works well for capacity planning</li>
-      </ul>
-      
-      <h3>Linear (1, 2, 3, 4, 5, 6, 7, 8)</h3>
-      <ul>
-        <li>Simple and straightforward</li>
-        <li>Can lead to false precision</li>
-        <li>Better for very experienced teams</li>
-      </ul>
-      
-      <h2>Choosing the Right Scale</h2>
-      
-      <h3>Use Fibonacci When:</h3>
-      <ul>
-        <li>Your team is experienced with agile</li>
-        <li>You need detailed sprint planning</li>
-        <li>You track velocity metrics</li>
-        <li>Stories vary significantly in size</li>
-      </ul>
-      
-      <h3>Use T-Shirt Sizing When:</h3>
-      <ul>
-        <li>New to agile estimation</li>
-        <li>Doing high-level roadmap planning</li>
-        <li>Team finds numbers intimidating</li>
-        <li>Estimating epics or features</li>
-      </ul>
-      
-      <h2>Making the Switch</h2>
-      <p>If you want to change scales:</p>
-      <ol>
-        <li>Discuss with the team first</li>
-        <li>Do a few practice sessions</li>
-        <li>Re-baseline your reference stories</li>
-        <li>Give it at least 3 sprints before judging</li>
-      </ol>
-    `,
-    date: '2025-06-12',
-    readTime: '7 min read',
-    tags: ['Estimation Scales', 'Comparison', 'Methodology'],
-  },
-  'facilitating-sessions': {
-    title: 'The Art of Facilitating Planning Poker Sessions',
-    content: `
-      <h2>The Role of the Facilitator</h2>
-      <p>A good facilitator makes the difference between a productive estimation session and a frustrating waste of time. Your job is to guide the process, not influence the estimates.</p>
-      
-      <h2>Pre-Session Preparation</h2>
-      
-      <h3>Story Preparation</h3>
-      <ul>
-        <li>Review stories beforehand for clarity</li>
-        <li>Identify stories that need splitting</li>
-        <li>Gather any necessary documentation</li>
-        <li>Prepare acceptance criteria</li>
-      </ul>
-      
-      <h3>Team Preparation</h3>
-      <ul>
-        <li>Ensure all relevant team members attend</li>
-        <li>Share the agenda in advance</li>
-        <li>Set up the estimation tool</li>
-        <li>Book a quiet, comfortable space</li>
-      </ul>
-      
-      <h2>Running the Session</h2>
-      
-      <h3>Opening (10 minutes)</h3>
-      <ul>
-        <li>Review the agenda and goals</li>
-        <li>Remind everyone of the estimation scale</li>
-        <li>Establish or review ground rules</li>
-        <li>Do a quick warm-up with a reference story</li>
-      </ul>
-      
-      <h3>Story Estimation Process</h3>
-      <ol>
-        <li><strong>Present the Story:</strong> Read title and description clearly</li>
-        <li><strong>Clarify Requirements:</strong> Allow questions and discussion</li>
-        <li><strong>Estimate:</strong> Everyone selects cards privately</li>
-        <li><strong>Reveal:</strong> Show all estimates simultaneously</li>
-        <li><strong>Discuss:</strong> Focus on highest and lowest estimates</li>
-        <li><strong>Re-estimate:</strong> Continue until consensus</li>
-      </ol>
-      
-      <h2>Facilitation Techniques</h2>
-      
-      <h3>Managing Discussions</h3>
-      <ul>
-        <li><strong>Focus on Outliers:</strong> Ask highest and lowest estimators to explain</li>
-        <li><strong>Timebox Discussions:</strong> Set 5-10 minute limits</li>
-        <li><strong>Capture Assumptions:</strong> Write down important decisions</li>
-        <li><strong>Stay Neutral:</strong> Don't advocate for specific estimates</li>
-      </ul>
-      
-      <h3>Dealing with Challenges</h3>
-      
-      <h4>Dominating Voices</h4>
-      <ul>
-        <li>Use round-robin for questions</li>
-        <li>Ask quieter members directly</li>
-        <li>Set speaking time limits</li>
-      </ul>
-      
-      <h4>Analysis Paralysis</h4>
-      <ul>
-        <li>Set discussion time limits</li>
-        <li>Suggest parking complex issues</li>
-        <li>Remind team of the goal</li>
-      </ul>
-      
-      <h4>Wide Estimate Ranges</h4>
-      <ul>
-        <li>Explore different interpretations</li>
-        <li>Consider splitting the story</li>
-        <li>Look for hidden complexity</li>
-      </ul>
-      
-      <h2>Keeping Energy High</h2>
-      <ul>
-        <li>Take breaks every 45-60 minutes</li>
-        <li>Vary your facilitation style</li>
-        <li>Use humor appropriately</li>
-        <li>Celebrate consensus moments</li>
-        <li>Keep sessions under 2 hours</li>
-      </ul>
-      
-      <h2>Closing the Session</h2>
-      <ul>
-        <li>Review what was accomplished</li>
-        <li>Document any parking lot items</li>
-        <li>Schedule follow-up actions</li>
-        <li>Gather feedback on the process</li>
-      </ul>
-      
-      <h2>Continuous Improvement</h2>
-      <ul>
-        <li>Ask for retrospective feedback</li>
-        <li>Track estimation accuracy over time</li>
-        <li>Adjust your facilitation style</li>
-        <li>Share learnings with other facilitators</li>
-      </ul>
-    `,
-    date: '2025-06-10',
-    readTime: '9 min read',
-    tags: ['Facilitation', 'Leadership', 'Team Management'],
-  },
-  'story-point-calibration': {
-    title: 'Story Point Calibration: Building Team Consensus',
-    content: `
-      <h2>Why Calibration Matters</h2>
-      <p>Story point calibration ensures your team has a shared understanding of what each point value represents. Without proper calibration, estimates become meaningless and velocity tracking impossible.</p>
-      
-      <h2>The Calibration Process</h2>
-      
-      <h3>Step 1: Choose Reference Stories</h3>
-      <p>Select 3-5 stories your team has completed that represent different sizes:</p>
-      <ul>
-        <li><strong>Small (1-2 points):</strong> Simple bug fixes, minor text changes</li>
-        <li><strong>Medium (3-5 points):</strong> New form fields, simple features</li>
-        <li><strong>Large (8-13 points):</strong> Complex features, integrations</li>
-      </ul>
-      
-      <h3>Step 2: Establish Anchor Points</h3>
-      <p>Start with your smallest reference story and assign it 1 or 2 points. Use this as your baseline for all other estimates.</p>
-      
-      <h3>Step 3: Relative Sizing</h3>
-      <p>For each new story, ask: "Is this bigger or smaller than our reference stories?" Compare complexity, not time.</p>
-      
-      <h2>Calibration Techniques</h2>
-      
-      <h3>The Wall Method</h3>
-      <ol>
-        <li>Put reference stories on a wall in order of size</li>
-        <li>Place new stories relative to existing ones</li>
-        <li>Move stories up or down until everyone agrees</li>
-        <li>Assign point values based on position</li>
-      </ol>
-      
-      <h3>Bucket Sorting</h3>
-      <ol>
-        <li>Create buckets for each point value</li>
-        <li>Sort stories into appropriate buckets</li>
-        <li>Discuss any that seem out of place</li>
-        <li>Adjust until consensus is reached</li>
-      </ol>
-      
-      <h2>Common Calibration Challenges</h2>
-      
-      <h3>Different Skill Levels</h3>
-      <p>Team members with different experience levels may estimate differently:</p>
-      <ul>
-        <li>Focus on team average, not individual capability</li>
-        <li>Consider pair programming for complex stories</li>
-        <li>Document assumptions about who will work on what</li>
-      </ul>
-      
-      <h3>Technical Debt</h3>
-      <p>Legacy code and technical debt affect estimates:</p>
-      <ul>
-        <li>Include refactoring effort in estimates</li>
-        <li>Track technical debt separately if needed</li>
-        <li>Consider creating debt reduction stories</li>
-      </ul>
-      
-      <h3>External Dependencies</h3>
-      <p>Dependencies can complicate estimation:</p>
-      <ul>
-        <li>Estimate only the work your team controls</li>
-        <li>Track dependencies separately</li>
-        <li>Consider probability of delays</li>
-      </ul>
-      
-      <h2>Maintaining Calibration</h2>
-      
-      <h3>Regular Reviews</h3>
-      <ul>
-        <li>Review estimates vs. actual effort monthly</li>
-        <li>Identify patterns in over/under estimation</li>
-        <li>Adjust reference stories if needed</li>
-        <li>Update team understanding</li>
-      </ul>
-      
-      <h3>New Team Members</h3>
-      <ul>
-        <li>Walk through reference stories</li>
-        <li>Explain team's estimation philosophy</li>
-        <li>Pair them with experienced estimators</li>
-        <li>Give them time to learn the codebase</li>
-      </ul>
-      
-      <h2>Signs You Need Recalibration</h2>
-      <ul>
-        <li>Velocity becomes unpredictable</li>
-        <li>Estimates consistently wrong</li>
-        <li>Team members estimate very differently</li>
-        <li>Major technology or process changes</li>
-      </ul>
-      
-      <h2>Best Practices</h2>
-      <ul>
-        <li>Estimate complexity, not time</li>
-        <li>Include all work in your definition of done</li>
-        <li>Don't change reference stories lightly</li>
-        <li>Document your team's estimation standards</li>
-        <li>Be patient - calibration takes time</li>
-      </ul>
-      
-      <h2>Tools for Calibration</h2>
-      <ul>
-        <li>Story mapping boards</li>
-        <li>Estimation history tracking</li>
-        <li>Reference story libraries</li>
-        <li>Team estimation guidelines</li>
-      </ul>
-    `,
-    date: '2025-06-08',
-    readTime: '8 min read',
-    tags: ['Story Points', 'Team Alignment', 'Calibration'],
-  },
-}
+    excerpt: 'Discover the most frequent pitfalls teams encounter during estimation sessions and practical solutions.',
+    content: () => (
+      <div className="space-y-8">
+        <section>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Introduction</h2>
+          <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
+            Even experienced teams can fall into common traps when using planning poker. Here are the seven most frequent mistakes and how to avoid them.
+          </p>
+        </section>
+        
+        <section>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Mistake #1: Revealing Cards Too Early</h2>
+          <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-6 mb-6">
+            <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+              <strong>The Problem:</strong> Team members show their cards before everyone has made their estimate, leading to anchoring bias.
+            </p>
+            <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+              <strong>The Solution:</strong> Use a digital tool or designate a facilitator to ensure simultaneous reveals.
+            </p>
+          </div>
+        </section>
 
-interface BlogPostPageProps {
-  params: {
-    slug: string
+        <section>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Mistake #2: Skipping the Discussion</h2>
+          <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-6 mb-6">
+            <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+              <strong>The Problem:</strong> Teams immediately re-estimate without discussing why estimates differ.
+            </p>
+            <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+              <strong>The Solution:</strong> Always discuss the highest and lowest estimates before the next round.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Key Takeaways</h2>
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-xl p-6">
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3">
+                <span className="text-green-600 dark:text-green-400">✓</span>
+                <span className="text-gray-700 dark:text-gray-300">Always reveal estimates simultaneously</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-green-600 dark:text-green-400">✓</span>
+                <span className="text-gray-700 dark:text-gray-300">Focus on discussion, not speed</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-green-600 dark:text-green-400">✓</span>
+                <span className="text-gray-700 dark:text-gray-300">Keep estimates relative to story points</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-green-600 dark:text-green-400">✓</span>
+                <span className="text-gray-700 dark:text-gray-300">Remember that estimates are not commitments</span>
+              </li>
+            </ul>
+          </div>
+        </section>
+      </div>
+    )
   }
 }
 
-export async function generateStaticParams() {
-  return Object.keys(blogPosts).map((slug) => ({
-    slug,
-  }))
+interface Props {
+  params: Promise<{ slug: string }>
 }
 
-export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
-  const post = blogPosts[params.slug as keyof typeof blogPosts]
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
+  const post = blogPosts[slug as keyof typeof blogPosts]
   
   if (!post) {
     return {
@@ -488,20 +248,18 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 
   return {
     title: `${post.title} | Scrint Blog`,
-    description: post.content.substring(0, 160).replace(/<[^>]*>/g, '') + '...',
+    description: post.excerpt,
     openGraph: {
       title: post.title,
-      description: post.content.substring(0, 160).replace(/<[^>]*>/g, '') + '...',
+      description: post.excerpt,
       type: 'article',
-      publishedTime: post.date,
-      tags: post.tags,
     },
-    keywords: post.tags.join(', '),
   }
 }
 
-export default function BlogPostPage({ params }: BlogPostPageProps) {
-  const post = blogPosts[params.slug as keyof typeof blogPosts]
+export default async function BlogPost({ params }: Props) {
+  const { slug } = await params
+  const post = blogPosts[slug as keyof typeof blogPosts]
 
   if (!post) {
     notFound()
@@ -509,74 +267,178 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto">
-          {/* Breadcrumb */}
-          <nav className="mb-8">
-            <Link 
-              href="/blog"
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-            >
-              ← Back to Blog
-            </Link>
-          </nav>
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-5 dark:opacity-10">
+        <svg width="100%" height="100%" viewBox="0 0 100 100" className="h-full">
+          <defs>
+            <pattern id="dots" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+              <circle cx="5" cy="5" r="1" fill="currentColor"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#dots)"/>
+        </svg>
+      </div>
 
-          {/* Article Header */}
-          <header className="mb-12">
-            <div className="flex flex-wrap gap-2 mb-4">
-              {post.tags.map((tag) => (
-                <span key={tag} className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium">
-                  {tag}
-                </span>
-              ))}
+      {/* Navigation Header */}
+      <nav className="relative z-10 flex items-center justify-between p-6 max-w-7xl mx-auto">
+        <Link href="/" className="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+          <img 
+            src="/logo.png" 
+            alt="Scrint Logo" 
+            className="w-8 h-8 rounded-lg"
+          />
+          Scrint
+        </Link>
+        
+        <div className="flex items-center gap-4">
+          <Link
+            href="/blog"
+            className="flex items-center gap-2 px-4 py-2 text-blue-600 dark:text-blue-400 font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+            Blog
+          </Link>
+          <Link
+            href="/faq"
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            FAQ
+          </Link>
+          <Link
+            href="/analytics"
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Analytics
+          </Link>
+          <ThemeToggle />
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="relative z-10 max-w-4xl mx-auto px-6 py-12">
+        {/* Breadcrumb */}
+        <nav className="mb-8">
+          <Link href="/blog" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+            ← Back to Blog
+          </Link>
+        </nav>
+
+        {/* Article Header */}
+        <header className="mb-12">
+          <div className="flex flex-wrap gap-3 mb-6">
+            {post.tags.map((tag) => (
+              <span key={tag} className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-4 py-2 rounded-full text-sm font-semibold">
+                {tag}
+              </span>
+            ))}
+          </div>
+          
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">
+            <span className="text-gray-900 dark:text-white">{post.title.split(' ').slice(0, -3).join(' ')}</span>
+            <span className="text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text"> {post.title.split(' ').slice(-3).join(' ')}</span>
+          </h1>
+          
+          <div className="flex items-center text-gray-500 dark:text-gray-400 text-lg">
+            <span className="font-medium">{post.date}</span>
+            <span className="mx-4">•</span>
+            <span className="font-medium">{post.readTime}</span>
+          </div>
+        </header>
+
+        {/* Article Content */}
+        <article className="relative">
+          <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-3xl blur-xl"></div>
+          <div className="relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-3xl border border-white/20 dark:border-gray-700/50 p-8 md:p-12 shadow-2xl">
+            <div className="prose prose-lg prose-blue dark:prose-invert max-w-none">
+              <post.content />
             </div>
-            
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-              {post.title}
-            </h1>
-            
-            <div className="flex items-center text-gray-600 dark:text-gray-400 mb-8">
-              <span>{post.date}</span>
-              <span className="mx-3">•</span>
-              <span>{post.readTime}</span>
-            </div>
-          </header>
+          </div>
+        </article>
 
-          {/* Article Content */}
-          <article className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 md:p-12">
-            <div 
-              className="prose prose-lg dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-white prose-h2:text-2xl prose-h3:text-xl prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-li:text-gray-700 dark:prose-li:text-gray-300 prose-strong:text-gray-900 dark:prose-strong:text-white"
-              dangerouslySetInnerHTML={{ __html: post.content }}
-            />
-          </article>
-
-          {/* CTA Section */}
-          <div className="mt-16 text-center">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                Ready to Put This Into Practice?
+        {/* CTA Section */}
+        <section className="mt-16">
+          <div className="relative">
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
+            <div className="relative bg-white dark:bg-gray-900 rounded-3xl border-2 border-blue-100 dark:border-blue-900 p-8 md:p-12 text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+                Ready to <span className="text-blue-600 dark:text-blue-400">Start Estimating?</span>
               </h2>
-              <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
-                Start your own planning poker session and try these techniques with your team.
+              <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
+                Put these insights into practice. Create your planning poker session and see the difference expert techniques make.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link 
                   href="/"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+                  className="inline-flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-blue-500/30"
                 >
-                  Start Planning Session
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Create Planning Session
                 </Link>
                 <Link 
                   href="/blog"
-                  className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white px-8 py-3 rounded-lg font-medium transition-colors"
+                  className="inline-flex items-center justify-center gap-3 bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-8 py-4 rounded-2xl font-semibold transition-all duration-300"
                 >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  </svg>
                   Read More Articles
                 </Link>
               </div>
             </div>
           </div>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-gray-200 dark:border-gray-700 mt-16 pt-8">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <div className="flex flex-wrap justify-center gap-6 mb-4">
+            <Link
+              href="/"
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            >
+              Home
+            </Link>
+            <Link
+              href="/blog"
+              className="text-sm text-blue-600 dark:text-blue-400 font-medium"
+            >
+              Blog
+            </Link>
+            <Link
+              href="/faq"
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            >
+              FAQ
+            </Link>
+            <Link
+              href="/analytics"
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            >
+              Analytics
+            </Link>
+            <Link
+              href="/legal"
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            >
+              Legal
+            </Link>
+          </div>
+          <p className="text-xs text-gray-400 dark:text-gray-500 pb-8">
+            © 2025 Scrint. Free planning poker for agile teams.
+          </p>
         </div>
-      </div>
+      </footer>
     </div>
   )
 }

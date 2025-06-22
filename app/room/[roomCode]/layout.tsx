@@ -1,11 +1,11 @@
 import { Metadata } from 'next'
 
 type Props = {
-  params: { roomCode: string }
+  params: Promise<{ roomCode: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const roomCode = params.roomCode
+  const { roomCode } = await params
 
   return {
     title: `Planning Poker Room ${roomCode} - Scrint`,

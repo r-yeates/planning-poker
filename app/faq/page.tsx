@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import ThemeToggle from '../components/ThemeToggle'
 
 export const metadata: Metadata = {
   title: 'Planning Poker FAQ - Frequently Asked Questions',
@@ -144,6 +145,49 @@ const faqCategories = [
 export default function FAQPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      {/* Navigation Header */}
+      <nav className="flex items-center justify-between p-6 max-w-7xl mx-auto">
+        <Link href="/" className="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+          <img 
+            src="/logo.png" 
+            alt="Scrint Logo" 
+            className="w-8 h-8 rounded-lg"
+          />
+          Scrint
+        </Link>
+        
+        <div className="flex items-center gap-4">
+          <Link
+            href="/blog"
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+            Blog
+          </Link>
+          <Link
+            href="/faq"
+            className="flex items-center gap-2 px-4 py-2 text-blue-600 dark:text-blue-400 font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            FAQ
+          </Link>
+          <Link
+            href="/analytics"
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Analytics
+          </Link>
+          <ThemeToggle />
+        </div>
+      </nav>
+
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
@@ -225,6 +269,47 @@ export default function FAQPage() {
             </div>
           </div>
         </div>
+
+        {/* Footer */}
+        <footer className="border-t border-gray-200 dark:border-gray-700 mt-16 pt-8">
+          <div className="max-w-7xl mx-auto px-6 text-center">
+            <div className="flex flex-wrap justify-center gap-6 mb-4">
+              <Link
+                href="/"
+                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Home
+              </Link>
+              <Link
+                href="/blog"
+                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Blog
+              </Link>
+              <Link
+                href="/faq"
+                className="text-sm text-blue-600 dark:text-blue-400 font-medium"
+              >
+                FAQ
+              </Link>
+              <Link
+                href="/analytics"
+                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Analytics
+              </Link>
+              <Link
+                href="/legal"
+                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Legal
+              </Link>
+            </div>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              © 2025 Scrint. Free planning poker for agile teams.
+            </p>
+          </div>
+        </footer>
       </div>
     </div>
   )

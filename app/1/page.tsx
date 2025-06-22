@@ -6,9 +6,9 @@ import { addDoc, collection, where, query, getDocs } from 'firebase/firestore';
 import { db, generateUniqueRoomCode, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
 import { trackRoomCreatedSafe } from '@/lib/analytics-buffer';
 import { type ScaleType } from '@/lib/estimation-scales';
-import packageJson from '../package.json';
-import ThemeToggle from './components/ThemeToggle';
-import FeatureCarousel from './components/FeatureCarousel';
+import packageJson from '../../package.json';
+import ThemeToggle from '../components/ThemeToggle';
+import FeatureCarousel from '../components/FeatureCarousel';
 import Link from 'next/link';
 import TextTransition from 'react-text-transition';
 
