@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import type { Room } from '@/lib/firebase';
 
 interface VoteProgressIndicatorProps {
@@ -15,6 +16,11 @@ export default function VoteProgressIndicator({
   showDetails = true,
   compact = false
 }: VoteProgressIndicatorProps) {
+  // Round timer state
+  const [roundStartTime, setRoundStartTime] = useState<number | null>(null);
+  const [roundElapsedTime, setRoundElapsedTime] = useState(0);
+  const [isRoundActive, setIsRoundActive] = useState(false);
+
   // Calculate voting stats excluding spectators
   const votersOnly = Object.entries(room?.participants || {}).filter(([_, participant]) => 
     participant.role !== 'spectator'
@@ -23,6 +29,50 @@ export default function VoteProgressIndicator({
   const votedCount = votersOnly.filter(([id, _]) => room?.votes[id]).length;
   const allVotersHaveVoted = voterCount > 0 && votedCount === voterCount;
   
+  // Track round start/reset
+  useEffect(() => {
+    const hasVotes = room.votes && Object.keys(room.votes).length > 0;
+    const votesRevealed = room.votesRevealed;
+    
+    // Start round timer when voting is possible (has voters) and no votes yet (new round)
+    if (voterCount > 0 && !hasVotes && !votesRevealed) {
+      if (!isRoundActive) {
+        setRoundStartTime(Date.now());
+        setIsRoundActive(true);
+        setRoundElapsedTime(0);
+      }
+    }
+    // Stop round timer when votes are revealed
+    else if (votesRevealed) {
+      setIsRoundActive(false);
+    }
+  }, [room.votes, room.votesRevealed, isRoundActive, voterCount]);
+
+  // Round timer countdown effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+
+    if (isRoundActive && roundStartTime) {
+      interval = setInterval(() => {
+        const now = Date.now();
+        const elapsed = Math.floor((now - roundStartTime) / 1000);
+        setRoundElapsedTime(elapsed);
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isRoundActive, roundStartTime]);
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   // Don't show if no voters
   if (voterCount === 0) {
     return null;
@@ -39,13 +89,26 @@ export default function VoteProgressIndicator({
             <span className="text-gray-600 dark:text-gray-400">
               {room.votesRevealed ? 'Voting Results' : 'Voting Progress'}
             </span>
-            <span className={`font-bold ${
-              room.votesRevealed || allVotersHaveVoted 
-                ? 'text-green-600 dark:text-green-400' 
-                : 'text-gray-600 dark:text-gray-400'
-            }`}>
-              {votedCount}/{voterCount}
-            </span>
+            <div className="flex items-center gap-3">
+              {/* Round Timer */}
+              {(isRoundActive || roundElapsedTime > 0) && (
+                <div className="flex items-center gap-1">
+                  <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span className="text-blue-600 dark:text-blue-400 font-mono text-xs">
+                    {formatTime(roundElapsedTime)}
+                  </span>
+                </div>
+              )}
+              <span className={`font-bold ${
+                room.votesRevealed || allVotersHaveVoted 
+                  ? 'text-green-600 dark:text-green-400' 
+                  : 'text-gray-600 dark:text-gray-400'
+              }`}>
+                {votedCount}/{voterCount}
+              </span>
+            </div>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
             <div 
@@ -78,12 +141,26 @@ export default function VoteProgressIndicator({
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
           {room.votesRevealed ? 'Voting Results' : 'Voting Progress'}
         </h3>
-        <div className={`text-sm font-bold transition-colors duration-200 ${
-          room.votesRevealed || allVotersHaveVoted 
-            ? 'text-green-600 dark:text-green-400' 
-            : 'text-gray-600 dark:text-gray-400'
-        }`}>
-          {votedCount}/{voterCount}
+        <div className="flex items-center gap-4">
+          {/* Round Timer */}
+          {(isRoundActive || roundElapsedTime > 0) && (
+            <div className="flex items-center gap-1">
+              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Round:</span>
+              <span className="text-sm font-mono font-semibold text-blue-600 dark:text-blue-400">
+                {formatTime(roundElapsedTime)}
+              </span>
+            </div>
+          )}
+          <div className={`text-sm font-bold transition-colors duration-200 ${
+            room.votesRevealed || allVotersHaveVoted 
+              ? 'text-green-600 dark:text-green-400' 
+              : 'text-gray-600 dark:text-gray-400'
+          }`}>
+            {votedCount}/{voterCount}
+          </div>
         </div>
       </div>
       

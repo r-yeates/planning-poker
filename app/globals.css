@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -17,7 +19,16 @@
 }
 
 body {
+  font-family: 'Roboto', system-ui, sans-serif;
   @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+}
+
+.font-roboto {
+  font-family: 'Roboto', system-ui, sans-serif !important;
+}
+
+.font-inter {
+  font-family: 'Inter', system-ui, sans-serif !important;
 }
 
 @layer components {

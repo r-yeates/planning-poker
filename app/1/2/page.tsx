@@ -6,8 +6,8 @@ import { addDoc, collection, where, query, getDocs } from 'firebase/firestore';
 import { db, generateUniqueRoomCode, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
 import { trackRoomCreatedSafe } from '@/lib/analytics-buffer';
 import { type ScaleType } from '@/lib/estimation-scales';
-import packageJson from '../../package.json';
-import ThemeToggle from '../components/ThemeToggle';
+import packageJson from '../../../package.json';
+import ThemeToggle from '../../components/ThemeToggle';
 import Link from 'next/link';
 
 // Room Templates Configuration
@@ -174,13 +174,13 @@ export default function ModernHomePage() {
           <div className="relative">
             <img 
               src="/logo.png" 
-              alt="Scrint Logo" 
+              alt="Sprintro Logo" 
               className="w-10 h-10 rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-300"
             />
             <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </div>
           <span className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
-            Scrint
+            Sprintro
           </span>
         </Link>
         
@@ -472,7 +472,7 @@ export default function ModernHomePage() {
         <div className="mb-20">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white mb-4">
-              Why choose <span className="text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">Scrint?</span>
+              Why choose <span className="text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">Sprintro?</span>
             </h2>
             <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
               Built with modern teams in mind, focusing on simplicity and effectiveness
@@ -515,7 +515,7 @@ export default function ModernHomePage() {
                 <span className="text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text"> estimation process?</span>
               </h2>
               <p className="text-xl text-slate-600 dark:text-slate-300 mb-8 max-w-3xl mx-auto">
-                Join thousands of agile teams who've discovered the joy of effortless planning poker with Scrint.
+                Join thousands of agile teams who've discovered the joy of effortless planning poker with Sprintro.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
@@ -545,11 +545,11 @@ export default function ModernHomePage() {
               <Link href="/" className="flex items-center gap-3">
                 <img 
                   src="/logo.png" 
-                  alt="Scrint Logo" 
+                  alt="Sprintro Logo" 
                   className="w-8 h-8 rounded-xl"
                 />
                 <span className="text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
-                  Scrint
+                  Sprintro
                 </span>
               </Link>
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">
@@ -590,7 +590,7 @@ export default function ModernHomePage() {
 
           <div className="border-t border-slate-200 dark:border-slate-700 mt-12 pt-8 text-center">
             <p className="text-slate-500 dark:text-slate-400">
-              © 2025 Scrint. Empowering agile teams worldwide.
+              © 2025 Sprintro. Empowering agile teams worldwide.
             </p>
           </div>
         </div>

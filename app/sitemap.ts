@@ -12,31 +12,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const staticPages = [
     {
-      url: 'https://scrint.dev',
+      url: 'https://Sprintro.dev',
       lastModified: new Date(),
       changeFrequency: 'daily' as const,
       priority: 1,
     },
     {
-      url: 'https://scrint.dev/blog',
+      url: 'https://Sprintro.dev/blog',
       lastModified: new Date(),
       changeFrequency: 'weekly' as const,
       priority: 0.8,
     },
     {
-      url: 'https://scrint.dev/faq',
+      url: 'https://Sprintro.dev/faq',
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     },
     {
-      url: 'https://scrint.dev/legal',
+      url: 'https://Sprintro.dev/legal',
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,
       priority: 0.5,
     },
     {
-      url: 'https://scrint.dev/analytics',
+      url: 'https://Sprintro.dev/analytics',
       lastModified: new Date(),
       changeFrequency: 'weekly' as const,
       priority: 0.3,
@@ -44,7 +44,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ]
 
   const blogPages = blogPosts.map(slug => ({
-    url: `https://scrint.dev/blog/${slug}`,
+    url: `https://Sprintro.dev/blog/${slug}`,
     lastModified: new Date(),
     changeFrequency: 'monthly' as const,
     priority: 0.6,

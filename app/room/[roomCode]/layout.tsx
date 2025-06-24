@@ -8,8 +8,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { roomCode } = await params
 
   return {
-    title: `Planning Poker Room ${roomCode} - Scrint`,
-    description: `Join planning poker estimation session ${roomCode}. Collaborative story point estimation for agile teams using Scrint.`,
+    title: `Planning Poker Room ${roomCode} - Sprintro`,
+    description: `Join planning poker estimation session ${roomCode}. Collaborative story point estimation for agile teams using Sprintro.`,
     robots: 'noindex, nofollow', // Rooms shouldn't be indexed by search engines
     openGraph: {
       title: `Planning Poker Room ${roomCode}`,

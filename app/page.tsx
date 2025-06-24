@@ -7,10 +7,10 @@ import { db, generateUniqueRoomCode, getRoomByCode, verifyRoomPassword } from '@
 import { trackRoomCreatedSafe } from '@/lib/analytics-buffer';
 import { type ScaleType } from '@/lib/estimation-scales';
 import packageJson from '../package.json';
-import ThemeToggle from './components/ThemeToggle';
-import FeatureCarousel from './components/FeatureCarousel';
+import ThemeToggle from './components/global/ThemeToggle';
 import Link from 'next/link';
 import TextTransition from 'react-text-transition';
+import PlanningPokerDemo from './components/home/PlanningPokerDemo';
 
 // Room Templates Configuration
 interface RoomTemplate {
@@ -248,9 +248,9 @@ export default function HomePage() {
   const structuredData = useMemo(() => ({
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "Scrint",
+    "name": "Sprintro",
     "description": "Free online planning poker tool for agile teams. Estimate user stories, eliminate bias, and reach consensus faster.",
-    "url": "https://scrint.dev",
+    "url": "https://sprintro.dev",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Any",
     "browserRequirements": "Modern web browser with JavaScript support",
@@ -276,8 +276,8 @@ export default function HomePage() {
     },
     "creator": {
       "@type": "Organization",
-      "name": "Scrint",
-      "url": "https://scrint.dev"
+      "name": "Sprintro",
+      "url": "https://sprintro.dev"
     }
   }), []);
 
@@ -287,18 +287,23 @@ export default function HomePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
-      
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-        {/* Navigation Bar */}
-        <nav className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 backdrop-blur-sm bg-white/95 dark:bg-slate-800/95">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
+      />      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+        {/* Hero Section with integrated nav */}
+        <section className="relative bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950/30 overflow-hidden">
+          <div className="absolute inset-0">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#22272b_1px,transparent_1px),linear-gradient(to_bottom,#22272b_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#94a3b8_1px,transparent_1px),linear-gradient(to_bottom,#94a3b8_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)] opacity-20"></div>
+          </div>
+          
+          {/* Navigation Bar - now inside hero section */}
+          <div className="relative max-w-7xl mx-auto px-6 py-4">
+            <nav className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-lg flex items-center justify-center shadow-sm">
-                  <span className="text-white font-bold text-lg">S</span>
-                </div>
-                <span className="font-semibold text-xl text-slate-900 dark:text-slate-100">Scrint</span>
+                {/* Logo for nav bar */}
+                <span className="relative w-12 h-12">
+                  <img src="/logo-dark.png" alt="Sprintro Logo" className="w-12 h-12 rounded-lg shadow-sm block dark:hidden" />
+                  <img src="/logo.png" alt="Sprintro Logo" className="w-12 h-12 rounded-lg shadow-sm hidden dark:block" />
+                </span>
+                <span className="font-semibold text-2xl md:text-2xl text-slate-900 dark:text-slate-100">Sprintro</span>
               </div>
               
               <div className="flex items-center gap-2">
@@ -324,17 +329,10 @@ export default function HomePage() {
                   <ThemeToggle />
                 </div>
               </div>
-            </div>
-          </div>
-        </nav>
-
-        {/* Hero Section */}
-        <section className="relative bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950/30 overflow-hidden">
-          <div className="absolute inset-0">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#334155_1px,transparent_1px),linear-gradient(to_bottom,#334155_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)] opacity-30"></div>
+            </nav>
           </div>
           
-          <div className="relative max-w-7xl mx-auto px-6 py-20 lg:py-28">
+          <div className="relative max-w-7xl mx-auto px-6 py-8 lg:py-12">
             <div className="text-center max-w-5xl mx-auto">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-full text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-8">
                 <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
@@ -342,17 +340,21 @@ export default function HomePage() {
               </div>
               
               <h1 className="text-5xl lg:text-7xl font-bold mb-6 text-slate-900 dark:text-slate-100">
-                Professional
+                Effortless
                 <br />
                 <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">
-                  Planning Poker
+                  Agile Estimation
                 </span>
               </h1>
-              
-              <div className="text-xl lg:text-2xl text-slate-600 dark:text-slate-300 mb-12 h-16 flex items-center justify-center">
+                <div className="text-xl lg:text-2xl text-slate-600 dark:text-slate-300 mb-12 h-16 flex items-center justify-center">
                 <TextTransition className="font-medium max-w-4xl">
                   {heroTexts[heroTextIndex]}
                 </TextTransition>
+              </div>
+
+              {/* Demo Cards */}
+              <div className="mb-0 lg:mb-16">
+                <PlanningPokerDemo />
               </div>
 
               {/* Quick Action Buttons */}
@@ -365,7 +367,7 @@ export default function HomePage() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
-                  Start Sprint Planning
+                  Start Planning Session
                 </button>
                 <button
                   onClick={() => {
@@ -379,25 +381,7 @@ export default function HomePage() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Explore Templates
-                </button>
-              </div>
-
-              {/* Demo Cards */}
-              <div className="relative max-w-md mx-auto">
-                <div className="grid grid-cols-5 gap-3">
-                  {['1', '2', '3', '5', '8'].map((value, index) => (
-                    <div 
-                      key={value}
-                      className="aspect-[3/4] bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-600 flex items-center justify-center font-semibold text-slate-700 dark:text-slate-300 hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                      style={{ 
-                        animationDelay: `${index * 0.1}s`,
-                      }}
-                    >
-                      {value}
-                    </div>
-                  ))}
-                </div>
+                  Explore Templates                </button>
               </div>
             </div>
           </div>
@@ -701,7 +685,7 @@ export default function HomePage() {
                     <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                     <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
                     <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                    <span className="ml-auto text-sm text-slate-500 dark:text-slate-400 font-mono">scrint.dev</span>
+                    <span className="ml-auto text-sm text-slate-500 dark:text-slate-400 font-mono">sprintro.dev</span>
                   </div>
                   
                   <div className="space-y-4">
@@ -825,10 +809,12 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-6 py-12">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">S</span>
-                </div>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">Scrint</span>
+                {/* Logo for footer */}
+                <span className="relative w-8 h-8">
+                  <img src="/logo-dark.png" alt="Sprintro Logo" className="w-8 h-8 rounded-lg block dark:hidden" />
+                  <img src="/logo.png" alt="Sprintro Logo" className="w-8 h-8 rounded-lg hidden dark:block" />
+                </span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">Sprintro</span>
               </div>
               
               <div className="flex items-center gap-6 text-sm">

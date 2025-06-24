@@ -247,7 +247,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: `${post.title} | Scrint Blog`,
+    title: `${post.title} | Sprintro Blog`,
     description: post.excerpt,
     openGraph: {
       title: post.title,
@@ -284,10 +284,10 @@ export default async function BlogPost({ params }: Props) {
         <Link href="/" className="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
           <img 
             src="/logo.png" 
-            alt="Scrint Logo" 
+            alt="Sprintro Logo" 
             className="w-8 h-8 rounded-lg"
           />
-          Scrint
+          Sprintro
         </Link>
         
         <div className="flex items-center gap-4">
@@ -435,7 +435,7 @@ export default async function BlogPost({ params }: Props) {
             </Link>
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500 pb-8">
-            © 2025 Scrint. Free planning poker for agile teams.
+            © 2025 Sprintro. Free planning poker for agile teams.
           </p>
         </div>
       </footer>

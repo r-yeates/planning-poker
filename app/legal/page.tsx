@@ -13,7 +13,7 @@ export default function LegalPage() {
       <section className="mb-8">
         <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Introduction</h2>
         <p className="text-gray-700 dark:text-gray-300 mb-4">
-          Welcome to Scrint. We respect your privacy and are committed to protecting your personal data. 
+          Welcome to Sprintro. We respect your privacy and are committed to protecting your personal data. 
           This privacy policy explains how we collect, use, and safeguard your information when you use our planning poker estimation tool.
         </p>
       </section>
@@ -125,8 +125,8 @@ export default function LegalPage() {
         </p>
         <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
           <p className="text-gray-700 dark:text-gray-300">
-            <strong>Email:</strong> privacy@scrint.dev<br />
-            <strong>GitHub:</strong> <a href="https://github.com/your-username/scrint" className="text-blue-600 dark:text-blue-400 hover:underline">Report an issue</a>
+            <strong>Email:</strong> privacy@Sprintro.dev<br />
+            <strong>GitHub:</strong> <a href="https://github.com/your-username/Sprintro" className="text-blue-600 dark:text-blue-400 hover:underline">Report an issue</a>
           </p>
         </div>
       </section>
@@ -138,7 +138,7 @@ export default function LegalPage() {
       <section className="mb-8">
         <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">1. Acceptance of Terms</h2>
         <p className="text-gray-700 dark:text-gray-300 mb-4">
-          By accessing and using Scrint ("the Service"), you accept and agree to be bound by the terms 
+          By accessing and using Sprintro ("the Service"), you accept and agree to be bound by the terms 
           and provision of this agreement. If you do not agree to these terms, you should not use this service.
         </p>
       </section>
@@ -146,7 +146,7 @@ export default function LegalPage() {
       <section className="mb-8">
         <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">2. Description of Service</h2>
         <p className="text-gray-700 dark:text-gray-300 mb-4">
-          Scrint is a web-based agile estimation tool that allows teams to collaboratively estimate 
+          Sprintro is a web-based agile estimation tool that allows teams to collaboratively estimate 
           the effort required for development tasks. The service provides real-time voting capabilities, 
           room management, and various estimation scales.
         </p>
@@ -211,7 +211,7 @@ export default function LegalPage() {
       <section className="mb-8">
         <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">7. Intellectual Property</h2>
         <p className="text-gray-700 dark:text-gray-300 mb-4">
-          The Scrint service, including its design, functionality, and content, is protected by 
+          The Sprintro service, including its design, functionality, and content, is protected by 
           copyright and other intellectual property laws. You may not copy, modify, distribute, or create 
           derivative works without explicit permission.
         </p>
@@ -255,8 +255,8 @@ export default function LegalPage() {
         </p>
         <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
           <p className="text-gray-700 dark:text-gray-300">
-            <strong>Email:</strong> legal@scrint.dev<br />
-            <strong>GitHub:</strong> <a href="https://github.com/your-username/scrint" className="text-blue-600 dark:text-blue-400 hover:underline">Report an issue</a>
+            <strong>Email:</strong> legal@Sprintro.dev<br />
+            <strong>GitHub:</strong> <a href="https://github.com/your-username/Sprintro" className="text-blue-600 dark:text-blue-400 hover:underline">Report an issue</a>
           </p>
         </div>
       </section>
@@ -271,10 +271,10 @@ export default function LegalPage() {
           <Link href="/" className="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
             <img 
               src="/logo.png" 
-              alt="Scrint Logo" 
+              alt="Sprintro Logo" 
               className="w-8 h-8 rounded-lg"
             />
-            Scrint
+            Sprintro
           </Link>
           <ThemeToggle />
         </div>
@@ -326,7 +326,7 @@ export default function LegalPage() {
         {/* Footer */}
         <div className="border-t border-gray-200 dark:border-gray-700 px-8 py-6">
           <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-            <p>Scrint v{packageJson.version}</p>
+            <p>Sprintro v{packageJson.version}</p>
             <Link href="/" className="hover:text-gray-700 dark:hover:text-gray-300">
               Back to Home
             </Link>

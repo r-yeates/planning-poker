@@ -6,8 +6,8 @@ import { addDoc, collection } from 'firebase/firestore';
 import { db, generateUniqueRoomCode, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
 import { trackRoomCreatedSafe } from '@/lib/analytics-buffer';
 import { type ScaleType } from '@/lib/estimation-scales';
-import packageJson from '../../package.json';
-import ThemeToggle from '../components/ThemeToggle';
+import packageJson from '../../../package.json';
+import ThemeToggle from '../../components/ThemeToggle';
 import Link from 'next/link';
 
 // Room Templates Configuration
@@ -146,10 +146,10 @@ export default function WarmHomePage() {
         <div className="flex items-center gap-3">
           <img 
             src="/logo.png" 
-            alt="Scrint Logo" 
+            alt="Sprintro Logo" 
             className="w-10 h-10 rounded-xl"
           />
-          <span className="font-bold text-xl text-gray-900 dark:text-white">Scrint.dev</span>
+          <span className="font-bold text-xl text-gray-900 dark:text-white">Sprintro.dev</span>
         </div>
         
         <div className="flex items-center gap-4">
@@ -480,7 +480,7 @@ export default function WarmHomePage() {
                 <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
                   <span className="text-xl">🎲</span>
                 </div>
-                <span className="text-2xl font-bold text-white">Scrint</span>
+                <span className="text-2xl font-bold text-white">Sprintro</span>
               </div>
               <p className="text-gray-400 leading-relaxed">
                 Making planning poker effortless for agile teams worldwide.
@@ -516,7 +516,7 @@ export default function WarmHomePage() {
           
           <div className="border-t border-gray-700 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              © 2025 Scrint. All rights reserved. v{packageJson.version}
+              © 2025 Sprintro. All rights reserved. v{packageJson.version}
             </p>
             <div className="flex items-center gap-4 mt-4 md:mt-0">
               <span className="text-gray-400 text-sm">Made with</span>

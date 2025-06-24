@@ -9,14 +9,15 @@ import type { Room } from '@/lib/firebase';
 import { ESTIMATION_SCALES, type ScaleType } from '@/lib/estimation-scales';
 import packageJson from '../../../package.json';
 
-import NamePrompt from '@/app/components/NamePrompt';
-import ThemeToggle from '@/app/components/ThemeToggle';
-import ParticipantCard from '@/app/components/ParticipantCard';
-import VotingCards from '@/app/components/VotingCards';
-import VoteProgressIndicator from '@/app/components/VoteProgressIndicator';
-import KeyboardShortcuts from '@/app/components/KeyboardShortcuts';
-import ConfettiCelebration, { triggerVoteRevealConfetti } from '@/app/components/ConfettiCelebration';
-import TicketQueue from '@/app/components/TicketQueue';
+import NamePrompt from '@/app/components/room/NamePrompt';
+import ThemeToggle from '@/app/components/global/ThemeToggle';
+import ParticipantCard from '@/app/components/room/ParticipantCard';
+import VotingCards from '@/app/components/room/VotingCards';
+import VoteProgressIndicator from '@/app/components/room/VoteProgressIndicator';
+import KeyboardShortcuts from '@/app/components/room/KeyboardShortcuts';
+import ConfettiCelebration, { triggerVoteRevealConfetti } from '@/app/components/room/ConfettiCelebration';
+import TicketQueue from '@/app/components/room/TicketQueue';
+import VotingTimer from '@/app/components/room/VotingTimer';
 
 export default function RoomPage() {
   const { roomCode } = useParams();
@@ -748,12 +749,11 @@ export default function RoomPage() {
         {/* Header with theme toggle */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img 
-              src="/logo.png" 
-              alt="Scrint Logo" 
-              className="w-8 h-8 rounded-lg"
-            />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Scrint</h1>
+            <span className="relative w-8 h-8">
+              <img src="/logo-dark.png" alt="Sprintro Logo" className="w-8 h-8 rounded-lg block dark:hidden" />
+              <img src="/logo.png" alt="Sprintro Logo" className="w-8 h-8 rounded-lg hidden dark:block" />
+            </span>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Sprintro</h1>
           </div>
             {/* Room Info and Admin Controls */}
           <div className="flex items-center gap-2">
@@ -765,7 +765,7 @@ export default function RoomPage() {
               title="Click to copy room link"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.213 9.787a3.391 3.391 0 0 0-4.795 0l-3.425 3.426a3.39 3.39 0 0 0 4.795 4.794l.321-.304m-.321-4.49a3.39 3.39 0 0 0 4.795 0l3.424-3.426a3.39 3.39 0 0 0-4.794-4.795l-1.028.961" />
               </svg>
               <span className="text-sm font-mono font-bold">{room?.roomCode}</span>
               {room?.password && (
@@ -1009,16 +1009,11 @@ export default function RoomPage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.5 17H4a1 1 0 0 1-1-1 3 3 0 0 1 3-3h1m0-3.05A2.5 2.5 0 1 1 9 5.5M19.5 17h.5a1 1 0 0 0 1-1 3 3 0 0 0-3-3h-1m0-3.05a2.5 2.5 0 1 0-2-4.45m.5 13.5h-7a1 1 0 0 1-1-1 3 3 0 0 1 3-3h3a3 3 0 0 1 3 3 1 1 0 0 1-1 1Zm-1-9.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z" />
                   </svg>
                   Participants ({Object.keys(room?.participants || {}).length})
                 </h3>
-                {!room.votesRevealed && voterCount > 0 && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {votedCount}/{voterCount} voted
-                  </div>
-                )}
               </div>
               <div className="space-y-3">
                   {Object.entries(room.participants)
@@ -1104,7 +1099,7 @@ export default function RoomPage() {
                     <h3 className={`font-semibold ${consensusData.textColor}`}>
                       Team Consensus: {consensusData.level}
                     </h3>
-                    <p className={`text-sm ${consensusData.textColor} opacity-80`}>
+                    <p className={`text-sm ${consensusData.textColor} opacity-90`}>
                       {consensusData.consensus}% alignment (spread: {consensusData.spread} points)
                     </p>
                   </div>
@@ -1149,6 +1144,13 @@ export default function RoomPage() {
               )}
             </div>
           </div>
+        )}        {/* Voting Timer */}
+        {hasJoined && roomId && (
+          <VotingTimer
+            room={room}
+            roomId={roomId}
+            isAdmin={isAdmin}
+          />
         )}
 
         {/* Voting Cards */}

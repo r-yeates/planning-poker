@@ -92,7 +92,7 @@ export interface Room {
   votes: Record<string, Vote>;
   roomCode: string;
   password?: string; // Optional password for room access
-  timer: TimerState;
+  timer?: TimerState; // Optional timer state
   roundHistory: RoundResult[];
   scaleType: ScaleType;
 }

@@ -9,7 +9,7 @@ Allow: /legal
 Disallow: /room/
 
 # Allow sitemap
-Sitemap: https://scrint.dev/sitemap.xml
+Sitemap: https://Sprintro.dev/sitemap.xml
 
 # Crawl delay to be respectful
 Crawl-delay: 1

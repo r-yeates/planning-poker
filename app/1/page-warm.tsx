@@ -257,7 +257,7 @@ export default function HomePage() {
           <div className="w-3 h-3 bg-red-400 rounded-full"></div>
           <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
           <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-          <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 font-mono">scrint.dev/room/H7J9M1</span>
+          <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 font-mono">Sprintro.dev/room/H7J9M1</span>
           <div className="ml-auto flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
             <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
             Live Demo
@@ -474,9 +474,9 @@ export default function HomePage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebApplication",
-            "name": "Scrint",
+            "name": "Sprintro",
             "description": "Free online planning poker tool for agile teams. Estimate user stories, eliminate bias, and reach consensus faster.",
-            "url": "https://scrint.dev",
+            "url": "https://Sprintro.dev",
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Any",
             "browserRequirements": "Modern web browser with JavaScript support",
@@ -502,8 +502,8 @@ export default function HomePage() {
             },
             "creator": {
               "@type": "Organization",
-              "name": "Scrint",
-              "url": "https://scrint.dev"
+              "name": "Sprintro",
+              "url": "https://Sprintro.dev"
             }
           })
         }}
@@ -527,10 +527,10 @@ export default function HomePage() {
         <div className="flex items-center gap-3">
           <img 
             src="/logo.png" 
-            alt="Scrint Logo" 
+            alt="Sprintro Logo" 
             className="w-10 h-10 rounded-xl"
           />
-          <span className="font-bold text-xl text-gray-900 dark:text-white">Scrint.dev</span>
+          <span className="font-bold text-xl text-gray-900 dark:text-white">Sprintro.dev</span>
         </div>
         
         <div className="flex items-center gap-4">
@@ -848,7 +848,7 @@ export default function HomePage() {
                 <span className="text-transparent bg-gradient-to-r from-red-600 via-orange-600 to-amber-600 bg-clip-text">Chaos</span>
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-                Transform your agile estimation from chaotic marathons into focused power sessions with Scrint
+                Transform your agile estimation from chaotic marathons into focused power sessions with Sprintro
               </p>
             </div>
 
@@ -930,10 +930,10 @@ export default function HomePage() {
             <div className="flex items-center gap-3">
               <img 
                 src="/logo.png" 
-                alt="Scrint Logo" 
+                alt="Sprintro Logo" 
                 className="w-6 h-6 rounded-lg"
               />
-              <span className="font-semibold text-gray-900 dark:text-white">Scrint.dev</span>
+              <span className="font-semibold text-gray-900 dark:text-white">Sprintro.dev</span>
             </div>
             
             <div className="flex items-center gap-6 text-sm">

@@ -6,8 +6,8 @@ import { addDoc, collection, where, query, getDocs } from 'firebase/firestore';
 import { db, generateUniqueRoomCode, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
 import { trackRoomCreatedSafe } from '@/lib/analytics-buffer';
 import { type ScaleType } from '@/lib/estimation-scales';
-import packageJson from '../../package.json';
-import ThemeToggle from '../components/ThemeToggle';
+import packageJson from '../../../package.json';
+import ThemeToggle from '../../components/global/ThemeToggle';
 import Link from 'next/link';
 
 // Room Templates Configuration
@@ -235,8 +235,8 @@ export default function DemoHomePage() {
       {/* Header */}
       <nav className="flex items-center justify-between p-6 max-w-7xl mx-auto">
         <Link href="/" className="flex items-center gap-3">
-          <img src="/logo.png" alt="Scrint Logo" className="w-10 h-10 rounded-xl" />
-          <span className="text-2xl font-bold text-gray-900 dark:text-white">Scrint</span>
+          <img src="/logo.png" alt="Sprintro Logo" className="w-10 h-10 rounded-xl" />
+          <span className="text-2xl font-bold text-gray-900 dark:text-white">Sprintro</span>
         </Link>
         
         <div className="flex items-center gap-6">
@@ -841,7 +841,7 @@ export default function DemoHomePage() {
             <Link href="/legal" className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Legal</Link>
           </div>
           <p className="text-gray-400 dark:text-gray-500 text-sm">
-            © 2025 Scrint. Making planning poker effortless for agile teams worldwide.
+            © 2025 Sprintro. Making planning poker effortless for agile teams worldwide.
           </p>
         </div>
       </footer>
