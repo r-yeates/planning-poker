@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { addDoc, collection, where, query, getDocs } from 'firebase/firestore';
 import { db, generateUniqueRoomCode, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
@@ -41,7 +41,7 @@ export default function HomePage() {
     'sprint-planning': {
       id: 'sprint-planning',
       name: 'Sprint Planning',
-      description: 'Perfect for estimating user stories and sprint backlog items',
+      description: 'Ideal for story estimation with automatic reveal when all votes are cast',
       icon: '🏃',
       scaleType: 'fibonacci',
       autoReveal: true,
@@ -51,7 +51,7 @@ export default function HomePage() {
     'bug-triage': {
       id: 'bug-triage',
       name: 'Bug Triage',
-      description: 'Quick sizing for bugs and technical debt items',
+      description: 'Fast-track sizing for defects and technical debt with anonymous voting',
       icon: '🐛',
       scaleType: 't-shirt',
       autoReveal: false,
@@ -61,7 +61,7 @@ export default function HomePage() {
     'story-refinement': {
       id: 'story-refinement',
       name: 'Story Refinement',
-      description: 'Detailed estimation with discussion and consensus building',
+      description: 'Detailed estimation sessions with manual reveal for thorough discussion',
       icon: '📝',
       scaleType: 'modified-fibonacci',
       autoReveal: false,
@@ -86,14 +86,15 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [heroTexts.length]);
 
-  const ensureUserId = () => {
+  // Memoize callback functions for better performance
+  const ensureUserId = useCallback(() => {
     let userId = localStorage.getItem('userId');
     if (!userId) {
       userId = Math.random().toString(36).substring(2);
       localStorage.setItem('userId', userId);
     }
     return userId;
-  };
+  }, []);
 
   const createRoom = async () => {
     setError('');
@@ -243,698 +244,610 @@ export default function HomePage() {
     }
   };
 
+  // Memoize structured data for SEO
+  const structuredData = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Scrint",
+    "description": "Free online planning poker tool for agile teams. Estimate user stories, eliminate bias, and reach consensus faster.",
+    "url": "https://scrint.dev",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Any",
+    "browserRequirements": "Modern web browser with JavaScript support",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock"
+    },
+    "featureList": [
+      "Real-time collaborative estimation",
+      "Anonymous voting options",
+      "Multiple estimation scales (Fibonacci, T-Shirt, Powers of Two)",
+      "Team consensus analysis",
+      "Room templates for different scenarios",
+      "No signup required",
+      "Mobile responsive design",
+      "Dark and light themes"
+    ],
+    "audience": {
+      "@type": "Audience",
+      "audienceType": "Agile development teams, Scrum masters, Product owners"
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "Scrint",
+      "url": "https://scrint.dev"
+    }
+  }), []);
+
   return (
     <>
       {/* Structured Data for SEO */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebApplication",
-            "name": "Scrint",
-            "description": "Free online planning poker tool for agile teams. Estimate user stories, eliminate bias, and reach consensus faster.",
-            "url": "https://scrint.dev",
-            "applicationCategory": "BusinessApplication",
-            "operatingSystem": "Any",
-            "browserRequirements": "Modern web browser with JavaScript support",
-            "offers": {
-              "@type": "Offer",
-              "price": "0",
-              "priceCurrency": "USD",
-              "availability": "https://schema.org/InStock"
-            },
-            "featureList": [
-              "Real-time collaborative estimation",
-              "Anonymous voting options",
-              "Multiple estimation scales (Fibonacci, T-Shirt, Powers of Two)",
-              "Team consensus analysis",
-              "Room templates for different scenarios",
-              "No signup required",
-              "Mobile responsive design",
-              "Dark and light themes"
-            ],
-            "audience": {
-              "@type": "Audience",
-              "audienceType": "Agile development teams, Scrum masters, Product owners"
-            },
-            "creator": {
-              "@type": "Organization",
-              "name": "Scrint",
-              "url": "https://scrint.dev"
-            }
-          })
-        }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-950 dark:to-indigo-950">
-      {/* Navigation Bar */}
-      <nav className="flex items-center justify-between p-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-3">
-          <img 
-            src="/logo.png" 
-            alt="Scrint Logo" 
-            className="w-10 h-10 rounded-xl"
-          />
-          <span className="font-bold text-xl text-gray-900 dark:text-white">Scrint.dev</span>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <Link
-            href="/blog"
-            className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-            </svg>
-            Blog
-          </Link>
-          <Link
-            href="/faq"
-            className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            FAQ
-          </Link>
-          <Link
-            href="/analytics"
-            className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            Analytics
-          </Link>
-          <ThemeToggle />
-        </div>
-      </nav>
-
-      {/* Hero Section with Cards Visual */}
-      <div className="max-w-7xl mx-auto px-6 pt-12 pb-20">
-        <div className="text-center mb-16">
-          
-          <h1 className="text-5xl md:text-7xl font-bold">
-            <span className="text-gray-900 dark:text-white">Estimate</span>
-            <span className="text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text"> Smart</span>
-          </h1>
-          
-          <div className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-4xl mx-auto mb-16 h-16 flex items-center justify-center overflow-hidden">
-            <TextTransition className="text-center whitespace-nowrap">
-              {heroTexts[heroTextIndex]}
-            </TextTransition>
-          </div>
-
-          {/* Floating Cards Animation */}
-          <div className="relative max-w-md mx-auto mb-16 z-10">
-            <div className="grid grid-cols-5 gap-2">
-              {['1', '2', '3', '5', '8'].map((value, index) => (
-                <div 
-                  key={value}
-                  className={`aspect-[3/4] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center font-bold text-lg transform hover:scale-110 hover:-translate-y-2 hover:rotate-2 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 cursor-pointer relative z-10`}
-                  style={{ 
-                    animation: `cardFloat 3s ease-in-out infinite ${index * 0.15}s, cardGlow 4s ease-in-out infinite ${index * 0.2}s`,
-                  }}
-                >
-                  {value}
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+        {/* Navigation Bar */}
+        <nav className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 backdrop-blur-sm bg-white/95 dark:bg-slate-800/95">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-lg flex items-center justify-center shadow-sm">
+                  <span className="text-white font-bold text-lg">S</span>
                 </div>
-              ))}
+                <span className="font-semibold text-xl text-slate-900 dark:text-slate-100">Scrint</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/blog"
+                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all duration-200"
+                >
+                  Blog
+                </Link>
+                <Link
+                  href="/faq"
+                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all duration-200"
+                >
+                  FAQ
+                </Link>
+                <Link
+                  href="/analytics"
+                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all duration-200"
+                >
+                  Analytics
+                </Link>
+                <div className="ml-3">
+                  <ThemeToggle />
+                </div>
+              </div>
             </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-blue-100/20 dark:to-blue-900/20 pointer-events-none"></div>
           </div>
-        </div>
+        </nav>
 
-        {/* Quick Start Section */}
-        <div className="relative mb-24 z-0">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-5 dark:opacity-10 z-0">
-            <svg width="100%" height="100%" viewBox="0 0 100 100" className="h-full">
-              <defs>
-                <pattern id="dots" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
-                  <circle cx="5" cy="5" r="1" fill="currentColor"/>
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#dots)"/>
-            </svg>
+        {/* Hero Section */}
+        <section className="relative bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950/30 overflow-hidden">
+          <div className="absolute inset-0">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#334155_1px,transparent_1px),linear-gradient(to_bottom,#334155_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)] opacity-30"></div>
           </div>
+          
+          <div className="relative max-w-7xl mx-auto px-6 py-20 lg:py-28">
+            <div className="text-center max-w-5xl mx-auto">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-full text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-8">
+                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                Free Forever • No Account Required • Start Immediately
+              </div>
+              
+              <h1 className="text-5xl lg:text-7xl font-bold mb-6 text-slate-900 dark:text-slate-100">
+                Professional
+                <br />
+                <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">
+                  Planning Poker
+                </span>
+              </h1>
+              
+              <div className="text-xl lg:text-2xl text-slate-600 dark:text-slate-300 mb-12 h-16 flex items-center justify-center">
+                <TextTransition className="font-medium max-w-4xl">
+                  {heroTexts[heroTextIndex]}
+                </TextTransition>
+              </div>
 
-          <div className="relative z-10">
-            <div className="text-center mb-16">
-              <h3 id="choose-template" className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-                Choose Your <span className="text-blue-600 dark:text-blue-400">Style</span>
-              </h3>
-              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                Select the perfect estimation approach for your team's workflow
-              </p>
-            </div>
-
-            {/* Template Selection */}
-            <div className="grid lg:grid-cols-3 gap-6 mb-20 relative">
-              <div className="group relative h-full">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-500 z-0"></div>
+              {/* Quick Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
                 <button
                   onClick={() => createRoomWithTemplate('sprint-planning')}
                   disabled={isCreating || isJoining}
-                  className="relative bg-white dark:bg-gray-900 p-8 rounded-3xl border-2 border-blue-100 dark:border-blue-900 hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full text-left h-full flex flex-col z-10"
+                  className="inline-flex items-center gap-3 bg-gradient-to-r from-indigo-600 to-violet-700 hover:from-indigo-700 hover:to-violet-800 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-2xl flex items-center justify-center text-3xl transform group-hover:rotate-12 transition-transform duration-300">
-                      🏃‍♂️
-                    </div>
-                    <div>
-                      <h4 className="text-2xl font-bold text-gray-900 dark:text-white">Sprint Planning</h4>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed flex-grow">
-                    Perfect for estimating user stories with your team. Auto-reveal cards when everyone votes.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium">Fibonacci Scale</span>
-                    <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium">Auto Reveal</span>
-                  </div>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Start Sprint Planning
                 </button>
-              </div>
-
-              <div className="group relative h-full">
-                <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-500 z-0"></div>
                 <button
-                  onClick={() => createRoomWithTemplate('bug-triage')}
-                  disabled={isCreating || isJoining}
-                  className="relative bg-white dark:bg-gray-900 p-8 rounded-3xl border-2 border-orange-100 dark:border-orange-900 hover:border-orange-300 dark:hover:border-orange-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full text-left h-full flex flex-col z-10"
+                  onClick={() => {
+                    document.getElementById('templates')?.scrollIntoView({ 
+                      behavior: 'smooth',
+                      block: 'start'
+                    });
+                  }}
+                  className="inline-flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 px-8 py-4 rounded-xl font-semibold text-lg border border-slate-200 dark:border-slate-600 shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200"
                 >
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900 rounded-2xl flex items-center justify-center text-3xl transform group-hover:rotate-12 transition-transform duration-300">
-                      🐛
-                    </div>
-                    <div>
-                      <h4 className="text-2xl font-bold text-gray-900 dark:text-white">Bug Triage</h4>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed flex-grow">
-                    Quick sizing for bugs and technical debt. Anonymous voting prevents bias.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-orange-50 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 rounded-full text-sm font-medium">T-Shirt Sizes</span>
-                    <span className="px-3 py-1 bg-orange-50 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 rounded-full text-sm font-medium">Anonymous</span>
-                  </div>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Explore Templates
                 </button>
               </div>
 
-              <div className="group relative h-full">
-                <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl blur opacity-25 group-hover:opacity-75 transition duration-500 z-0"></div>
-                <button
-                  onClick={() => createRoomWithTemplate('story-refinement')}
-                  disabled={isCreating || isJoining}
-                  className="relative bg-white dark:bg-gray-900 p-8 rounded-3xl border-2 border-purple-100 dark:border-purple-900 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full text-left h-full flex flex-col z-10"
-                >
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-2xl flex items-center justify-center text-3xl transform group-hover:rotate-12 transition-transform duration-300">
-                      📝
+              {/* Demo Cards */}
+              <div className="relative max-w-md mx-auto">
+                <div className="grid grid-cols-5 gap-3">
+                  {['1', '2', '3', '5', '8'].map((value, index) => (
+                    <div 
+                      key={value}
+                      className="aspect-[3/4] bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-600 flex items-center justify-center font-semibold text-slate-700 dark:text-slate-300 hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                      style={{ 
+                        animationDelay: `${index * 0.1}s`,
+                      }}
+                    >
+                      {value}
                     </div>
-                    <div>
-                      <h4 className="text-2xl font-bold text-gray-900 dark:text-white">Story Refinement</h4>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed flex-grow">
-                    Deep discussions and consensus building. Manual reveal for thoughtful estimation.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-purple-50 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium">Modified Fibonacci</span>
-                    <span className="px-3 py-1 bg-purple-50 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium">Manual Reveal</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Custom Room Creation */}
-            <div className="relative">
-              <div className="text-center mb-12">
-                <div className="inline-flex items-center gap-3 mb-4">
-                  <div className="h-px w-16 bg-gradient-to-r from-transparent to-gray-300 dark:to-gray-600"></div>
-                  <span className="text-lg font-medium text-gray-500 dark:text-gray-400">Or go custom</span>
-                  <div className="h-px w-16 bg-gradient-to-l from-transparent to-gray-300 dark:to-gray-600"></div>
-                </div>
-                <h4 className="text-3xl font-bold text-gray-900 dark:text-white">Build Your Own Room</h4>
-              </div>
-
-              <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-12">
-                {/* Create Custom Room */}
-                <div className="group relative h-full">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-700 z-0"></div>
-                  <div className="relative bg-white dark:bg-gray-900 p-10 rounded-[2rem] border border-gray-200 dark:border-gray-700 h-full flex flex-col z-10">
-                    <div className="text-center mb-8">
-                      <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-6 shadow-lg">
-                        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                      </div>
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Host a Room</h3>
-                      <p className="text-gray-600 dark:text-gray-300">Take control and lead the session</p>
-                    </div>
-                    
-                    <div className="space-y-6 flex-grow">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                          🔒 Password Protection <span className="font-normal text-gray-500">(optional)</span>
-                        </label>
-                        <input
-                          type="password"
-                          value={roomPassword}
-                          onChange={(e) => setRoomPassword(e.target.value)}
-                          placeholder="Keep it secret, keep it safe"
-                          className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-blue-500 dark:focus:border-blue-400 focus:bg-white dark:focus:bg-gray-700 transition-all duration-200"
-                          disabled={isCreating || isJoining}
-                        />
-                      </div>
-                      
-                      <button
-                        onClick={createRoom}
-                        disabled={isCreating || isJoining}
-                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg font-bold py-5 rounded-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl"
-                      >
-                        {isCreating ? (
-                          <>
-                            <svg className="animate-spin h-6 w-6" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                            Summoning Room...
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-2xl">⚡</span>
-                            Create & Lead
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Join Existing Room */}
-                <div className="group relative h-full">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-700"></div>
-                  <div className="relative bg-white dark:bg-gray-900 p-10 rounded-[2rem] border border-gray-200 dark:border-gray-700 h-full flex flex-col">
-                    <div className="text-center mb-8">
-                      <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl mb-6 shadow-lg">
-                        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Join the Action</h3>
-                      <p className="text-gray-600 dark:text-gray-300">Drop into an existing session</p>
-                    </div>
-                    
-                    <div className="space-y-6 flex-grow">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                          🎯 Room Code
-                        </label>
-                        <input
-                          type="text"
-                          value={roomCode}
-                          onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                          placeholder="ABC12"
-                          maxLength={5}
-                          className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-green-500 dark:focus:border-green-400 focus:bg-white dark:focus:bg-gray-700 font-mono text-center text-2xl tracking-[0.5em] transition-all duration-200"
-                          disabled={isCreating || isJoining}
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                          🔐 Password <span className="font-normal text-gray-500">(if needed)</span>
-                        </label>
-                        <input
-                          type="password"
-                          value={joinPassword}
-                          onChange={(e) => setJoinPassword(e.target.value)}
-                          placeholder="Secret handshake"
-                          className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-green-500 dark:focus:border-green-400 focus:bg-white dark:focus:bg-gray-700 transition-all duration-200"
-                          disabled={isCreating || isJoining}
-                        />
-                      </div>
-                      
-                      <button
-                        onClick={joinRoom}
-                        disabled={isCreating || isJoining || !roomCode}
-                        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-lg font-bold py-5 rounded-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg hover:shadow-xl"
-                      >
-                        {isJoining ? (
-                          <>
-                            <svg className="animate-spin h-6 w-6" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                            Joining...
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-2xl">🚀</span>
-                            Jump In
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Interactive Demo Section
-        <div className="max-w-4xl mx-auto mb-16">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-8 md:p-12 rounded-2xl border border-blue-200 dark:border-blue-800">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-gray-900 dark:text-white">
-              See It In Action
-            </h2>
-            <p className="text-center text-gray-600 dark:text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-              Watch how teams go from chaos to consensus in under 30 seconds, or try it yourself with no commitment required.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors flex items-center justify-center gap-2">
-                🎬 Watch 30s Demo
-              </button>
-              <button className="border-2 border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors flex items-center justify-center gap-2">
-                🚀 Try Live Demo
-              </button>
-            </div>
-            <div className="text-center mt-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">No account needed • Works on any device • Ready in seconds</p>
-            </div>
-          </div>
-        </div> */}
-
-        {/* Problem/Solution Section */}
-        {/* <div className="max-w-6xl mx-auto mb-16">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Transform Your Estimation Process
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300">
-              See the difference Planning Poker makes for agile teams
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="text-center p-6 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-200 dark:border-red-800">
-              <div className="text-red-500 text-5xl mb-4">😤</div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Before Planning Poker</h3>
-              <ul className="text-gray-600 dark:text-gray-300 space-y-2 text-left max-w-sm mx-auto text-sm">
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 font-bold">×</span>
-                  <span>2-4 hour estimation meetings</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 font-bold">×</span>
-                  <span>Loud voices dominate decisions</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 font-bold">×</span>
-                  <span>Teams never align on complexity</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 font-bold">×</span>
-                  <span>Estimates are always wrong</span>
-                </li>
-              </ul>
-            </div>
-            <div className="text-center p-6 bg-green-50 dark:bg-green-900/10 rounded-2xl border border-green-200 dark:border-green-800">
-              <div className="text-green-500 text-5xl mb-4">🎯</div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">With Planning Poker</h3>
-              <ul className="text-gray-600 dark:text-gray-300 space-y-2 text-left max-w-sm mx-auto text-sm">
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 font-bold">✓</span>
-                  <span>30-minute focused sessions</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 font-bold">✓</span>
-                  <span>Everyone's voice is heard equally</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 font-bold">✓</span>
-                  <span>Clear consensus on story points</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 font-bold">✓</span>
-                  <span>Better sprint predictability</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div> */}
- 
-        {/* Why Teams Love It Section */}
-        <div className="py-24">
+        {/* Templates Section */}
+        <section id="templates" className="py-24 bg-white dark:bg-slate-800">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-6xl font-bold mb-6">
-                <span className="text-gray-900 dark:text-white">Stop the </span>
-                <span className="text-transparent bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 bg-clip-text">Estimation </span>
-                <span className="text-transparent bg-gradient-to-r from-red-600 via-orange-600 to-yellow-600 bg-clip-text">Chaos</span>
+            <div className="text-center mb-16">
+              <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+                Choose Your Method
               </h2>
-              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-                Transform your agile estimation from chaotic marathons into focused power sessions with Scrint
+              <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
+                Select from professionally configured templates or customize your own estimation approach
               </p>
             </div>
 
-            {/* Feature Carousel Replacement - Interactive Cards */}
-            <div className="mb-20">
-              <div className="grid lg:grid-cols-2 gap-12 items-center">
-                <div className="space-y-8">
-                  <div className="flex items-start gap-4 group">
-                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <span className="text-white text-xl">⚡</span>
+            {/* Template Cards */}
+            <div className="grid lg:grid-cols-3 gap-8 mb-20">
+              {[
+                {
+                  id: 'sprint-planning',
+                  name: 'Sprint Planning',
+                  description: 'Ideal for story estimation with automatic reveal when all votes are cast',
+                  color: 'from-emerald-500 to-teal-600',
+                  bgColor: 'emerald-50',
+                  borderColor: 'emerald-200',
+                  textColor: 'emerald-700',
+                  darkBgColor: 'emerald-950/50',
+                  darkBorderColor: 'emerald-800',
+                  darkTextColor: 'emerald-300'
+                },
+                {
+                  id: 'bug-triage',
+                  name: 'Bug Triage',
+                  description: 'Fast-track sizing for defects and technical debt with anonymous voting',
+                  color: 'from-amber-500 to-orange-600',
+                  bgColor: 'amber-50',
+                  borderColor: 'amber-200',
+                  textColor: 'amber-700',
+                  darkBgColor: 'amber-950/50',
+                  darkBorderColor: 'amber-800',
+                  darkTextColor: 'amber-300'
+                },
+                {
+                  id: 'story-refinement',
+                  name: 'Story Refinement',
+                  description: 'Detailed estimation sessions with manual reveal for thorough discussion',
+                  color: 'from-indigo-500 to-violet-600',
+                  bgColor: 'indigo-50',
+                  borderColor: 'indigo-200',
+                  textColor: 'indigo-700',
+                  darkBgColor: 'indigo-950/50',
+                  darkBorderColor: 'indigo-800',
+                  darkTextColor: 'indigo-300'
+                }
+              ].map((template, index) => (
+                <div key={template.id} className="group relative">
+                  <button
+                    onClick={() => createRoomWithTemplate(template.id)}
+                    disabled={isCreating || isJoining}
+                    className="relative w-full bg-white dark:bg-slate-700 p-8 rounded-2xl border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                  >
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className={`w-14 h-14 bg-gradient-to-br ${template.color} rounded-xl flex items-center justify-center shadow-md`}>
+                        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                        {template.name}
+                      </h3>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Lightning Fast Consensus</h3>
-                      <p className="text-gray-600 dark:text-gray-300">No more 3-hour meetings. Get aligned in minutes with simultaneous voting that prevents anchoring bias.</p>
+                    <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
+                      {template.description}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className={`px-3 py-1 bg-${template.bgColor} dark:bg-${template.darkBgColor} text-${template.textColor} dark:text-${template.darkTextColor} border border-${template.borderColor} dark:border-${template.darkBorderColor} rounded-full text-sm font-medium`}>
+                        {ROOM_TEMPLATES[template.id]?.scaleType === 'fibonacci' ? 'Fibonacci Scale' : 
+                         ROOM_TEMPLATES[template.id]?.scaleType === 't-shirt' ? 'T-Shirt Sizes' : 
+                         'Modified Fibonacci'}
+                      </span>
+                      {ROOM_TEMPLATES[template.id]?.autoReveal && (
+                        <span className="px-3 py-1 bg-slate-100 dark:bg-slate-600 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-500 rounded-full text-sm font-medium">
+                          Auto Reveal
+                        </span>
+                      )}
+                      {ROOM_TEMPLATES[template.id]?.anonymousVoting && (
+                        <span className="px-3 py-1 bg-slate-100 dark:bg-slate-600 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-500 rounded-full text-sm font-medium">
+                          Anonymous
+                        </span>
+                      )}
                     </div>
-                  </div>
-
-                  <div className="flex items-start gap-4 group">
-                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <span className="text-white text-xl">🎭</span>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Anonymous Mode</h3>
-                      <p className="text-gray-600 dark:text-gray-300">Level the playing field. Junior devs get the same voice as seniors when estimates are hidden until reveal.</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4 group">
-                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <span className="text-white text-xl">📊</span>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Smart Analytics</h3>
-                      <p className="text-gray-600 dark:text-gray-300">Track velocity trends, spot estimation patterns, and improve your team's predictability over time.</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4 group">
-                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <span className="text-white text-xl">🎉</span>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Celebration Mode</h3>
-                      <p className="text-gray-600 dark:text-gray-300">Confetti explosions when consensus is reached. Because estimation wins should feel like wins!</p>
-                    </div>
-                  </div>
+                  </button>
                 </div>
+              ))}
+            </div>
 
-                <div className="relative">
-                  <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200 dark:border-gray-700 shadow-2xl">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                      <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                      <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                      <span className="ml-auto text-sm text-gray-500 dark:text-gray-400 font-mono">scrint.dev</span>
+            {/* Custom Room Section */}
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-3xl p-8 lg:p-12 border border-slate-200 dark:border-slate-600">
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+                  Custom Configuration
+                </h3>
+                <p className="text-lg text-slate-600 dark:text-slate-300">
+                  Create a personalized room or join an existing estimation session
+                </p>
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                {/* Create Room */}
+                <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-600 shadow-sm">
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </div>
+                    <h4 className="text-xl font-bold text-slate-900 dark:text-slate-100">Create New Room</h4>
+                    <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">Host your own estimation session</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Room Password
+                      </label>
+                      <input
+                        type="password"
+                        value={roomPassword}
+                        onChange={(e) => setRoomPassword(e.target.value)}
+                        placeholder="Optional security password"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all outline-none"
+                        disabled={isCreating || isJoining}
+                      />
                     </div>
                     
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">SC</div>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">Sarah is estimating...</span>
-                      </div>
-                      
-                      <div className="grid grid-cols-5 gap-2 mb-6">
-                        {['1', '2', '3', '5', '8'].map((value, index) => (
-                          <div 
-                            key={value}
-                            className="aspect-square bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg hover:scale-105 transition-transform duration-200 cursor-pointer"
-                            style={{ 
-                              animationDelay: `${index * 0.1}s`,
-                            }}
-                          >
-                            {value}
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
-                        <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                          <span className="text-lg">🎉</span>
-                          <span className="font-medium">Consensus reached! Story estimated at 5 points.</span>
+                    <button
+                      onClick={createRoom}
+                      disabled={isCreating || isJoining}
+                      className="w-full bg-gradient-to-r from-indigo-600 to-violet-700 hover:from-indigo-700 hover:to-violet-800 text-white py-3 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                    >
+                      {isCreating ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Creating Room...
+                        </span>
+                      ) : 'Create Room'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Join Room */}
+                <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-600 shadow-sm">
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                      </svg>
+                    </div>
+                    <h4 className="text-xl font-bold text-slate-900 dark:text-slate-100">Join Existing Room</h4>
+                    <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">Enter an active estimation session</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Room Code
+                      </label>
+                      <input
+                        type="text"
+                        value={roomCode}
+                        onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                        placeholder="Enter 5-character code"
+                        maxLength={5}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800 font-mono text-center text-xl tracking-wider transition-all outline-none"
+                        disabled={isCreating || isJoining}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Password
+                      </label>
+                      <input
+                        type="password"
+                        value={joinPassword}
+                        onChange={(e) => setJoinPassword(e.target.value)}
+                        placeholder="Enter if room is protected"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800 transition-all outline-none"
+                        disabled={isCreating || isJoining}
+                      />
+                    </div>
+                    
+                    <button
+                      onClick={joinRoom}
+                      disabled={isCreating || isJoining || !roomCode}
+                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white py-3 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                    >
+                      {isJoining ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Joining Room...
+                        </span>
+                      ) : 'Join Room'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="mt-8 p-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl text-center">
+                  <p className="text-red-700 dark:text-red-400 font-medium">{error}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="py-24 bg-slate-50 dark:bg-slate-900">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+                Enterprise-Grade Features
+              </h2>
+              <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
+                Built for professional teams who demand reliability, accuracy, and seamless collaboration
+              </p>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div className="space-y-8">
+                {[
+                  {
+                    icon: (
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    ),
+                    title: 'Rapid Consensus Building',
+                    description: 'Eliminate lengthy discussions with simultaneous voting that prevents cognitive bias and anchoring effects.',
+                    color: 'from-indigo-500 to-violet-600'
+                  },
+                  {
+                    icon: (
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.25-4.5a2.44 2.44 0 00-1.07-.06H12m8.25 4.5a2.44 2.44 0 00-1.07-.06" />
+                      </svg>
+                    ),
+                    title: 'Anonymous Estimation',
+                    description: 'Ensure equal participation across all seniority levels with optional anonymous voting modes.',
+                    color: 'from-emerald-500 to-teal-600'
+                  },
+                  {
+                    icon: (
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    ),
+                    title: 'Advanced Analytics',
+                    description: 'Track team velocity patterns and estimation accuracy to continuously improve planning precision.',
+                    color: 'from-amber-500 to-orange-600'
+                  },
+                  {
+                    icon: (
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    ),
+                    title: 'Team Collaboration',
+                    description: 'Real-time updates and engagement features that keep distributed teams connected and focused.',
+                    color: 'from-purple-500 to-pink-600'
+                  }
+                ].map((feature, index) => (
+                  <div key={index} className="flex items-start gap-4">
+                    <div className={`flex-shrink-0 w-12 h-12 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center shadow-md`}>
+                      {feature.icon}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+                        {feature.title}
+                      </h3>
+                      <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="relative">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 border border-slate-200 dark:border-slate-600 shadow-lg">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                    <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                    <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                    <span className="ml-auto text-sm text-slate-500 dark:text-slate-400 font-mono">scrint.dev</span>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">SC</div>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Team estimation in progress...</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-5 gap-2">
+                      {['1', '2', '3', '5', '8'].map((value, index) => (
+                        <div 
+                          key={value}
+                          className="aspect-square bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm"
+                        >
+                          {value}
                         </div>
+                      ))}
+                    </div>
+                    
+                    <div className="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="font-medium">Consensus achieved: 5 story points</span>
                       </div>
                     </div>
                   </div>
-      
                 </div>
               </div>
             </div>
+          </div>
+        </section>
 
-            {/* Call to Action */}
-            <div className="text-center">
-              <button
-                onClick={() => {
-                  document.getElementById('choose-template')?.scrollIntoView({ 
-                    behavior: 'smooth',
-                    block: 'start'
-                  });
-                }}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 rounded-full text-white font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer">Start Planning Better
-              </button>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-                No signup required • Free forever • Start in 30 seconds
+        {/* Resources Section */}
+        <section className="py-24 bg-white dark:bg-slate-800">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+                Knowledge Center
+              </h2>
+              <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
+                Expert guidance and best practices for successful agile estimation
               </p>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Content Marketing Section */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Master Planning Poker
-          </h2>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-            Learn expert techniques, avoid common mistakes, and run more effective estimation sessions
-          </p>
-        </div>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-950/20 dark:to-violet-950/20 rounded-2xl p-8 border border-indigo-200 dark:border-indigo-800">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Expert Articles</h3>
+                </div>
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                    <span className="text-slate-700 dark:text-slate-300">Planning Poker Fundamentals</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-violet-500 rounded-full"></div>
+                    <span className="text-slate-700 dark:text-slate-300">Avoiding Estimation Bias</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <span className="text-slate-700 dark:text-slate-300">Remote Team Best Practices</span>
+                  </div>
+                </div>
+                <Link 
+                  href="/blog"
+                  className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-medium transition-colors shadow-md hover:shadow-lg"
+                >
+                  Read Articles
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </Link>
+              </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Blog Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                </svg>
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-2xl p-8 border border-emerald-200 dark:border-emerald-800">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Frequently Asked</h3>
+                </div>
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                    <span className="text-slate-700 dark:text-slate-300">Understanding Story Points</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                    <span className="text-slate-700 dark:text-slate-300">Handling Estimation Conflicts</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+                    <span className="text-slate-700 dark:text-slate-300">Scaling Agile Estimation</span>
+                  </div>
+                </div>
+                <Link 
+                  href="/faq"
+                  className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-medium transition-colors shadow-md hover:shadow-lg"
+                >
+                  View FAQ
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </Link>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Expert Insights</h3>
-            </div>
-            
-            <div className="space-y-4 mb-6">
-              <div className="border-l-4 border-blue-500 pl-4">
-                <h4 className="font-semibold text-gray-900 dark:text-white">Planning Poker Basics</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Complete guide for beginners</p>
-              </div>
-              <div className="border-l-4 border-purple-500 pl-4">
-                <h4 className="font-semibold text-gray-900 dark:text-white">Common Estimation Mistakes</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300">7 pitfalls and how to avoid them</p>
-              </div>
-              <div className="border-l-4 border-green-500 pl-4">
-                <h4 className="font-semibold text-gray-900 dark:text-white">Remote Planning Poker</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Tools and techniques for distributed teams</p>
-              </div>
-            </div>
-            
-            <Link 
-              href="/blog"
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              Read Blog Articles
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </Link>
-          </div>
-
-          {/* FAQ Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Quick Answers</h3>
-            </div>
-            
-            <div className="space-y-4 mb-6">
-              <div className="border-l-4 border-purple-500 pl-4">
-                <h4 className="font-semibold text-gray-900 dark:text-white">What are story points?</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Understanding relative estimation</p>
-              </div>
-              <div className="border-l-4 border-blue-500 pl-4">
-                <h4 className="font-semibold text-gray-900 dark:text-white">How to handle disagreements?</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Building team consensus</p>
-              </div>
-              <div className="border-l-4 border-green-500 pl-4">
-                <h4 className="font-semibold text-gray-900 dark:text-white">Best practices for remote teams?</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Tools and engagement techniques</p>
-              </div>
-            </div>
-            
-            <Link 
-              href="/faq"
-              className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              View All FAQs
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Simple Footer */}
-      <footer className="border-t border-gray-200 dark:border-gray-700 py-8">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <img 
-                src="/logo.png" 
-                alt="Scrint Logo" 
-                className="w-6 h-6 rounded-lg"
-              />
-              <span className="font-semibold text-gray-900 dark:text-white">Scrint.dev</span>
-            </div>
-            
-            <div className="flex items-center gap-6 text-sm">
-              <Link
-                href="/blog"
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              >
-                Blog
-              </Link>
-              <Link
-                href="/faq"
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              >
-                FAQ
-              </Link>
-              <Link
-                href="/analytics"
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              >
-                Analytics
-              </Link>
-              <Link
-                href="/legal"
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              >
-                Legal
-              </Link>
             </div>
           </div>
-        </div>
-      </footer>
+        </section>
+
+        {/* Footer */}
+        <footer className="bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
+          <div className="max-w-7xl mx-auto px-6 py-12">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">S</span>
+                </div>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">Scrint</span>
+              </div>
+              
+              <div className="flex items-center gap-6 text-sm">
+                <Link href="/blog" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                  Blog
+                </Link>
+                <Link href="/faq" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                  FAQ
+                </Link>
+                <Link href="/analytics" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                  Analytics
+                </Link>
+                <Link href="/legal" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                  Legal
+                </Link>
+              </div>
+            </div>
+          </div>
+        </footer>
       </div>
     </>
   );
