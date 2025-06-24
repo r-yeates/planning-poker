@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Room, TicketItem } from '@/lib/firebase';
 
@@ -22,15 +22,11 @@ export default function TicketQueue({
   const [newTicketTitle, setNewTicketTitle] = useState('');
   const [newTicketDescription, setNewTicketDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Scalability improvements
+    // Scalability improvements
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
   const [currentPage, setCurrentPage] = useState(1);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isAdminCollapsed, setIsAdminCollapsed] = useState(true);
-  const [selectedTickets, setSelectedTickets] = useState<Set<string>>(new Set());
-  const [showBulkActions, setShowBulkActions] = useState(false);
   const itemsPerPage = 10;
 
   // Filter and sort tickets
@@ -105,24 +101,12 @@ export default function TicketQueue({
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const removeTicket = async (ticket: TicketItem) => {
-    if (!isAdmin) return;
-
-    try {
-      const docRef = doc(db, 'rooms', roomId);
-      await updateDoc(docRef, {
-        ticketQueue: arrayRemove(ticket)
-      });
-    } catch (error) {
-      console.error('Error removing ticket:', error);
-    }
+  };  const getParticipantName = (userId: string) => {
+    return room.participants[userId]?.name || 'Unknown User';
   };
 
   const selectTicket = async (ticket: TicketItem) => {
-    if (!isAdmin) return;
-
+    if (!roomId || !isAdmin) return;
     try {
       const docRef = doc(db, 'rooms', roomId);
       await updateDoc(docRef, {
@@ -135,98 +119,21 @@ export default function TicketQueue({
     }
   };
 
-  const bulkRemoveTickets = async () => {
-    if (!roomId || selectedTickets.size === 0) return;
-    
+  const removeTicket = async (ticket: TicketItem) => {
+    if (!roomId || !isAdmin) return;
     try {
-      const ticketsToRemove = filteredAndSortedTickets.filter(ticket => 
-        selectedTickets.has(ticket.id)
-      );
-      
       const docRef = doc(db, 'rooms', roomId);
-      const updates = ticketsToRemove.map(ticket => 
-        updateDoc(docRef, { ticketQueue: arrayRemove(ticket) })
-      );
-      
-      await Promise.all(updates);
-      setSelectedTickets(new Set());
-      setShowBulkActions(false);
+      await updateDoc(docRef, {
+        ticketQueue: room.ticketQueue.filter(t => t.id !== ticket.id)
+      });
     } catch (error) {
-      console.error('Error removing tickets:', error);
+      console.error('Error removing ticket:', error);
     }
-  };
-
-  const toggleTicketSelection = (ticketId: string) => {
-    const newSelection = new Set(selectedTickets);
-    if (newSelection.has(ticketId)) {
-      newSelection.delete(ticketId);
-    } else {
-      newSelection.add(ticketId);
-    }
-    setSelectedTickets(newSelection);
-  };
-
-  const selectAllCurrentPage = () => {
-    const newSelection = new Set(selectedTickets);
-    paginatedTickets.forEach(ticket => newSelection.add(ticket.id));
-    setSelectedTickets(newSelection);
-  };
-
-  const deselectAll = () => {
-    setSelectedTickets(new Set());
-  };
-
-  const getParticipantName = (userId: string) => {
-    return room.participants[userId]?.name || 'Unknown User';
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-      {/* Admin Dropdown - Only for Admin Users */}
-      {isAdmin && (
-        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <button
-            onClick={() => setIsAdminCollapsed(!isAdminCollapsed)}
-            className="w-full flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded transition-colors"
-          >
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Admin Controls</span>
-            <svg 
-              className={`w-4 h-4 transition-transform text-gray-400 ${isAdminCollapsed ? '-rotate-90' : ''}`} 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          
-          {/* Admin Controls Content */}
-          {!isAdminCollapsed && (
-            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-3">
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                Use the buttons below to manage tickets and control the voting session.
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => setShowBulkActions(!showBulkActions)}
-                  className="px-3 py-2 text-sm bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors"
-                >
-                  {showBulkActions ? 'Exit Bulk' : 'Bulk Actions'}
-                </button>
-                <button 
-                  onClick={() => setIsAddingTicket(true)}
-                  className="px-3 py-2 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                >
-                  Add Ticket
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">        <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
@@ -246,17 +153,7 @@ export default function TicketQueue({
             </svg>
             Ticket Queue ({filteredAndSortedTickets.length}/{room.ticketQueue?.length || 0})
           </h3>
-          {!isAdmin && (
-            <button
-              onClick={() => setIsAddingTicket(true)}
-              className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              Add Ticket
-            </button>
-          )}
-        </div>
-
-        {/* Search and Filter Controls */}
+        </div>        {/* Search and Filter Controls */}
         {!isCollapsed && (room.ticketQueue?.length || 0) > 3 && (
           <div className="mt-3 space-y-2">
             <div className="flex gap-2">
@@ -284,40 +181,21 @@ export default function TicketQueue({
                 Found {filteredAndSortedTickets.length} of {room.ticketQueue?.length || 0} tickets
               </div>
             )}
-            
-            {/* Bulk Actions Bar */}
-            {showBulkActions && isAdmin && (
-              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 p-3 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-orange-800 dark:text-orange-200">
-                      {selectedTickets.size} selected
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={selectAllCurrentPage}
-                        className="text-xs px-2 py-1 bg-orange-200 dark:bg-orange-700 hover:bg-orange-300 dark:hover:bg-orange-600 text-orange-800 dark:text-orange-200 rounded transition-colors"
-                      >
-                        Select Page
-                      </button>
-                      <button
-                        onClick={deselectAll}
-                        className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded transition-colors"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  </div>
-                  <button
-                    onClick={bulkRemoveTickets}
-                    disabled={selectedTickets.size === 0}
-                    className="px-3 py-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded text-sm transition-colors"
-                  >
-                    Remove Selected
-                  </button>
-                </div>
-              </div>
-            )}
+          </div>
+        )}
+
+        {/* Add Ticket Button */}
+        {!isCollapsed && (
+          <div className="mt-3">
+            <button
+              onClick={() => setIsAddingTicket(true)}
+              className="w-full px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add New Ticket
+            </button>
           </div>
         )}
       </div>
@@ -381,22 +259,14 @@ export default function TicketQueue({
               <div className="space-y-2">
                 {paginatedTickets.map((ticket, index) => {
                   const globalIndex = (currentPage - 1) * itemsPerPage + index + 1;
+                  const isCurrent = room.currentTicket === ticket.title;
                   return (
                     <div
                       key={ticket.id}
-                      className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:shadow-md transition-shadow"
+                      className={`bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:shadow-md transition-shadow${isCurrent ? ' ring-2 ring-blue-400 dark:ring-blue-600' : ''}`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-2 flex-1 min-w-0">
-                          {/* Bulk Selection Checkbox */}
-                          {showBulkActions && isAdmin && (
-                            <input
-                              type="checkbox"
-                              checked={selectedTickets.has(ticket.id)}
-                              onChange={() => toggleTicketSelection(ticket.id)}
-                              className="mt-1 w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 dark:focus:ring-orange-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                            />
-                          )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded">
@@ -405,6 +275,9 @@ export default function TicketQueue({
                               <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
                                 {ticket.title}
                               </h4>
+                              {isCurrent && (
+                                <span className="ml-2 px-2 py-0.5 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">Current</span>
+                              )}
                             </div>
                             {ticket.description && (
                               <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
@@ -416,33 +289,31 @@ export default function TicketQueue({
                               <span>•</span>
                               <span>{new Date(ticket.addedAt).toLocaleDateString()}</span>
                             </div>
+                          </div>                        </div>
+                        {isAdmin && (
+                          <div className="flex flex-col items-end ml-2 gap-2">
+                            {/* Tick icon for select */}                            <button
+                              onClick={() => selectTicket(ticket)}
+                              disabled={isCurrent}
+                              title={isCurrent ? 'Currently selected' : 'Select for discussion'}
+                              className={`p-0.5 rounded-full border transition-all duration-200 focus:outline-none ${isCurrent ? 'border-blue-400 bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-200 opacity-100' : 'border-transparent bg-transparent text-gray-300 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900 opacity-30 hover:opacity-100 focus:opacity-100'}`}
+                              style={{ cursor: isCurrent ? 'default' : 'pointer' }}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </button>
+                            {/* X icon for delete */}                            <button
+                              onClick={() => removeTicket(ticket)}
+                              title="Delete ticket"
+                              className="p-0.5 rounded-full border border-transparent bg-transparent text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900 transition-all duration-200 focus:outline-none opacity-30 hover:opacity-100 focus:opacity-100"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
                           </div>
-                        </div>
-                        
-                        <div className="flex gap-1 ml-2">
-                          {isAdmin && !showBulkActions && (
-                            <>
-                              <button
-                                onClick={() => selectTicket(ticket)}
-                                className="p-1.5 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                                title="Select this ticket for voting"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={() => removeTicket(ticket)}
-                                className="p-1.5 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                                title="Remove ticket"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -492,6 +363,5 @@ export default function TicketQueue({
           )}
         </div>
       )}
-    </div>
-  );
+    </div>  );
 }
