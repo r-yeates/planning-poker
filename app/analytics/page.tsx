@@ -4,7 +4,7 @@ import { Metadata } from 'next'
 import { useState, useEffect } from 'react';
 import { getGlobalAnalytics, getDailyAnalytics, initializeAnalytics } from '@/lib/firebase';
 import type { GlobalAnalytics, DailyAnalytics } from '@/lib/firebase';
-import ThemeToggle from '../components/ThemeToggle';
+import ThemeToggle from '../components/global/ThemeToggle';
 import Link from 'next/link';
 
 // Note: Since this is a client component, metadata should be handled by layout

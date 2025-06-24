@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import ThemeToggle from '../../components/ThemeToggle'
+import ThemeToggle from '../../components/global/ThemeToggle'
 
 // Blog post data - in a real app, this would come from a CMS or database
 const blogPosts = {

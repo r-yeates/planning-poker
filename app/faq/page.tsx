@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import ThemeToggle from '../components/ThemeToggle'
+import ThemeToggle from '../components/global/ThemeToggle'
 
 export const metadata: Metadata = {
   title: 'Planning Poker FAQ - Frequently Asked Questions',
