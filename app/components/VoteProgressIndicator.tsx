@@ -23,8 +23,8 @@ export default function VoteProgressIndicator({
   const votedCount = votersOnly.filter(([id, _]) => room?.votes[id]).length;
   const allVotersHaveVoted = voterCount > 0 && votedCount === voterCount;
   
-  // Don't show if no voters or votes are already revealed
-  if (voterCount === 0 || room.votesRevealed) {
+  // Don't show if no voters
+  if (voterCount === 0) {
     return null;
   }
 
@@ -36,9 +36,11 @@ export default function VoteProgressIndicator({
       <div className={`flex items-center gap-2 ${className}`}>
         <div className="flex-1">
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-gray-600 dark:text-gray-400">Voting Progress</span>
+            <span className="text-gray-600 dark:text-gray-400">
+              {room.votesRevealed ? 'Voting Results' : 'Voting Progress'}
+            </span>
             <span className={`font-bold ${
-              allVotersHaveVoted 
+              room.votesRevealed || allVotersHaveVoted 
                 ? 'text-green-600 dark:text-green-400' 
                 : 'text-gray-600 dark:text-gray-400'
             }`}>
@@ -48,7 +50,7 @@ export default function VoteProgressIndicator({
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
             <div 
               className={`h-1.5 rounded-full transition-all duration-500 ease-out ${
-                allVotersHaveVoted 
+                room.votesRevealed || allVotersHaveVoted 
                   ? 'bg-green-500 dark:bg-green-400' 
                   : 'bg-blue-500 dark:bg-blue-400'
               }`}
@@ -61,7 +63,7 @@ export default function VoteProgressIndicator({
             />
           </div>
         </div>
-        {allVotersHaveVoted && (
+        {(room.votesRevealed || allVotersHaveVoted) && (
           <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -74,10 +76,10 @@ export default function VoteProgressIndicator({
     <div className={`bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4 ${className}`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Voting Progress
+          {room.votesRevealed ? 'Voting Results' : 'Voting Progress'}
         </h3>
         <div className={`text-sm font-bold transition-colors duration-200 ${
-          allVotersHaveVoted 
+          room.votesRevealed || allVotersHaveVoted 
             ? 'text-green-600 dark:text-green-400' 
             : 'text-gray-600 dark:text-gray-400'
         }`}>
@@ -90,7 +92,7 @@ export default function VoteProgressIndicator({
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
           <div 
             className={`h-2 rounded-full transition-all duration-500 ease-out ${
-              allVotersHaveVoted 
+              room.votesRevealed || allVotersHaveVoted 
                 ? 'bg-green-500 dark:bg-green-400' 
                 : 'bg-blue-500 dark:bg-blue-400'
             }`}
@@ -107,7 +109,16 @@ export default function VoteProgressIndicator({
       {/* Status Message */}
       {showDetails && (
         <div className="flex items-center gap-2">
-          {allVotersHaveVoted ? (
+          {room.votesRevealed ? (
+            <>
+              <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-sm text-green-600 dark:text-green-400 font-medium">
+                Votes revealed ({votedCount} of {voterCount} participants voted)
+              </span>
+            </>
+          ) : allVotersHaveVoted ? (
             <>
               <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />

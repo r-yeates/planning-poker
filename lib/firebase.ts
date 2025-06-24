@@ -71,8 +71,17 @@ export interface RoundResult {
   completedAt: number;     // timestamp when round was completed
 }
 
+export interface TicketItem {
+  id: string;
+  title: string;
+  description?: string;
+  addedBy: string; // userId who added the ticket
+  addedAt: number; // timestamp
+}
+
 export interface Room {
   currentTicket: string;
+  ticketQueue: TicketItem[]; // List of tickets ready to be pointed
   votesRevealed: boolean;
   autoReveal: boolean;
   anonymousVoting: boolean; // Hide voter identities
@@ -371,6 +380,29 @@ export const createDemoRoom = async (): Promise<string> => {
     showTooltips: true,
     confettiEnabled: true, // Enable confetti by default
     currentTicket: 'User Story: Shopping Cart - Add ability to save items for later purchase',
+    ticketQueue: [
+      {
+        id: 'ticket-1',
+        title: 'API Rate Limiting Implementation',
+        description: 'Implement throttling for external API calls to prevent abuse',
+        addedBy: 'demo-user-1',
+        addedAt: Date.now()
+      },
+      {
+        id: 'ticket-2', 
+        title: 'User Profile Settings Page',
+        description: 'Create a comprehensive settings page where users can manage their profile information',
+        addedBy: 'demo-user-2',
+        addedAt: Date.now()
+      },
+      {
+        id: 'ticket-3',
+        title: 'Database Migration Tool',
+        description: 'Automated schema update system for production deployments',
+        addedBy: 'demo-user-3',
+        addedAt: Date.now()
+      }
+    ],
     scaleType: 'fibonacci',
     createdAt: new Date(),
     timer: {

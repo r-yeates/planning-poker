@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { addDoc, collection, where, query, getDocs } from 'firebase/firestore';
 import { db, generateUniqueRoomCode, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
 import { trackRoomCreatedSafe } from '@/lib/analytics-buffer';
 import { type ScaleType } from '@/lib/estimation-scales';
-import packageJson from '../package.json';
-import ThemeToggle from './components/ThemeToggle';
-import FeatureCarousel from './components/FeatureCarousel';
+import packageJson from '../../package.json';
+import ThemeToggle from '../components/ThemeToggle';
+import FeatureCarousel from '../components/FeatureCarousel';
 import Link from 'next/link';
 import TextTransition from 'react-text-transition';
 
@@ -24,6 +24,39 @@ interface RoomTemplate {
   showTooltips: boolean;
 }
 
+const ROOM_TEMPLATES: Record<string, RoomTemplate> = {
+  'sprint-planning': {
+    id: 'sprint-planning',
+    name: 'Sprint Planning',
+    description: 'Perfect for estimating user stories and sprint backlog items',
+    icon: '🏃',
+    scaleType: 'fibonacci',
+    autoReveal: true,
+    anonymousVoting: false,
+    showTooltips: true
+  },
+  'bug-triage': {
+    id: 'bug-triage',
+    name: 'Bug Triage',
+    description: 'Quick sizing for bugs and technical debt items',
+    icon: '🐛',
+    scaleType: 't-shirt',
+    autoReveal: false,
+    anonymousVoting: true,
+    showTooltips: false
+  },
+  'story-refinement': {
+    id: 'story-refinement',
+    name: 'Story Refinement',
+    description: 'Detailed estimation with discussion and consensus building',
+    icon: '📝',
+    scaleType: 'modified-fibonacci',
+    autoReveal: false,
+    anonymousVoting: false,
+    showTooltips: true
+  }
+};
+
 export default function HomePage() {
   const [roomCode, setRoomCode] = useState('');
   const [roomPassword, setRoomPassword] = useState(''); // For creating room with password
@@ -36,47 +69,12 @@ export default function HomePage() {
   // Text transition states (only for hero)
   const [heroTextIndex, setHeroTextIndex] = useState(0);
   
-  // Memoize static data to prevent unnecessary re-creation
-  const ROOM_TEMPLATES = useMemo<Record<string, RoomTemplate>>(() => ({
-    'sprint-planning': {
-      id: 'sprint-planning',
-      name: 'Sprint Planning',
-      description: 'Perfect for estimating user stories and sprint backlog items',
-      icon: '🏃',
-      scaleType: 'fibonacci',
-      autoReveal: true,
-      anonymousVoting: false,
-      showTooltips: true
-    },
-    'bug-triage': {
-      id: 'bug-triage',
-      name: 'Bug Triage',
-      description: 'Quick sizing for bugs and technical debt items',
-      icon: '🐛',
-      scaleType: 't-shirt',
-      autoReveal: false,
-      anonymousVoting: true,
-      showTooltips: false
-    },
-    'story-refinement': {
-      id: 'story-refinement',
-      name: 'Story Refinement',
-      description: 'Detailed estimation with discussion and consensus building',
-      icon: '📝',
-      scaleType: 'modified-fibonacci',
-      autoReveal: false,
-      anonymousVoting: false,
-      showTooltips: true
-    }
-  }), []);
-
-  const heroTexts = useMemo(() => [
+  const heroTexts = [
     'Real-time collaborative estimation for agile teams.',
     'Eliminate estimation bias with anonymous voting.',
     'Cut planning meetings from hours to minutes.',
-    'Get better velocity predictions with data insights.',
-    'Boost team collaboration with real-time feedback.'
-  ], []);
+    'Get better velocity predictions with data insights.'
+  ];
 
   // Text transition effect (only for hero)
   useEffect(() => {
@@ -112,7 +110,6 @@ export default function HomePage() {
         showTooltips: false, // Default to tooltips disabled
         confettiEnabled: true, // Default to confetti enabled
         currentTicket: '',
-        ticketQueue: [], // Start with empty ticket queue
         scaleType: 'fibonacci', // Default to fibonacci, admins can change it later
         createdAt: new Date(),
         timer: {
@@ -167,7 +164,6 @@ export default function HomePage() {
         showTooltips: template.showTooltips,
         confettiEnabled: true, // Default to confetti enabled for templates
         currentTicket: '',
-        ticketQueue: [], // Start with empty ticket queue
         scaleType: template.scaleType,
         createdAt: new Date(),
         timer: {
@@ -745,43 +741,8 @@ export default function HomePage() {
                 </div>
 
                 <div className="relative">
-                  <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200 dark:border-gray-700 shadow-2xl">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                      <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                      <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                      <span className="ml-auto text-sm text-gray-500 dark:text-gray-400 font-mono">scrint.dev</span>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">SC</div>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">Sarah is estimating...</span>
-                      </div>
-                      
-                      <div className="grid grid-cols-5 gap-2 mb-6">
-                        {['1', '2', '3', '5', '8'].map((value, index) => (
-                          <div 
-                            key={value}
-                            className="aspect-square bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg hover:scale-105 transition-transform duration-200 cursor-pointer"
-                            style={{ 
-                              animationDelay: `${index * 0.1}s`,
-                            }}
-                          >
-                            {value}
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
-                        <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                          <span className="text-lg">🎉</span>
-                          <span className="font-medium">Consensus reached! Story estimated at 5 points.</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-      
+                  {/* Enhanced Interactive Demo */}
+                  <DemoAreaComponent />
                 </div>
               </div>
             </div>
@@ -806,7 +767,7 @@ export default function HomePage() {
       </div>
 
       {/* Content Marketing Section */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
+      {/* <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
             Master Planning Poker
@@ -818,7 +779,7 @@ export default function HomePage() {
 
         <div className="grid md:grid-cols-2 gap-8">
           {/* Blog Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+          {/* <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
                 <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -826,9 +787,9 @@ export default function HomePage() {
                 </svg>
               </div>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Expert Insights</h3>
-            </div>
+            </div> */}
             
-            <div className="space-y-4 mb-6">
+            {/* <div className="space-y-4 mb-6">
               <div className="border-l-4 border-blue-500 pl-4">
                 <h4 className="font-semibold text-gray-900 dark:text-white">Planning Poker Basics</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Complete guide for beginners</p>
@@ -841,9 +802,9 @@ export default function HomePage() {
                 <h4 className="font-semibold text-gray-900 dark:text-white">Remote Planning Poker</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Tools and techniques for distributed teams</p>
               </div>
-            </div>
+            </div> */}
             
-            <Link 
+            {/* <Link 
               href="/blog"
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
             >
@@ -852,10 +813,10 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
             </Link>
-          </div>
+          </div> */}
 
           {/* FAQ Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+          {/* <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
                 <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -878,9 +839,9 @@ export default function HomePage() {
                 <h4 className="font-semibold text-gray-900 dark:text-white">Best practices for remote teams?</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Tools and engagement techniques</p>
               </div>
-            </div>
+            </div> */}
             
-            <Link 
+            {/* <Link 
               href="/faq"
               className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
             >
@@ -891,7 +852,7 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Simple Footer */}
       <footer className="border-t border-gray-200 dark:border-gray-700 py-8">
@@ -939,3 +900,296 @@ export default function HomePage() {
     </>
   );
 }
+
+// Demo Area Component - Shows planning poker in action
+const DemoAreaComponent = () => {
+  const [demoPhase, setDemoPhase] = useState<'intro' | 'story' | 'voting' | 'thinking' | 'reveal' | 'results'>('intro');
+  const [participantVotes, setParticipantVotes] = useState<Record<string, string>>({});
+  const [showVotes, setShowVotes] = useState(false);
+  const [storyIndex, setStoryIndex] = useState(0);
+
+  const demoStories = [
+    {
+      title: "User can save items to wishlist",
+      description: "As a customer, I want to save products to a wishlist so I can purchase them later",
+      estimate: "5"
+    },
+    {
+      title: "Implement two-factor authentication",
+      description: "As a user, I want 2FA for account security so my data stays protected",
+      estimate: "8"
+    },
+    {
+      title: "Add search filters to product page",
+      description: "As a shopper, I want to filter products by price and category for easier browsing",
+      estimate: "3"
+    }
+  ];
+
+  const demoParticipants = [
+    { name: 'Sarah', avatar: '👩‍💻', role: 'Frontend Dev', estimate: '5' },
+    { name: 'Mike', avatar: '👨‍💻', role: 'Backend Dev', estimate: '5' },
+    { name: 'Alex', avatar: '🧑‍💻', role: 'Full Stack', estimate: '8' },
+    { name: 'Lisa', avatar: '👩‍🎨', role: 'UX Designer', estimate: '3' },
+    { name: 'Tom', avatar: '👨‍🔬', role: 'QA Engineer', estimate: '5' }
+  ];
+
+  const currentStory = demoStories[storyIndex];
+
+  // Auto-cycle through demo phases
+  useEffect(() => {
+    const phases = ['intro', 'story', 'voting', 'thinking', 'reveal', 'results'] as const;
+    const timings = [3000, 4000, 2000, 6000, 3000, 4000]; // Time in each phase
+    
+    const timer = setTimeout(() => {
+      const currentIndex = phases.indexOf(demoPhase);
+      const nextIndex = (currentIndex + 1) % phases.length;
+      
+      if (nextIndex === 0) {
+        // Starting new cycle - move to next story
+        setStoryIndex((prev) => (prev + 1) % demoStories.length);
+        setParticipantVotes({});
+        setShowVotes(false);
+      }
+      
+      setDemoPhase(phases[nextIndex]);
+    }, timings[phases.indexOf(demoPhase)]);
+
+    return () => clearTimeout(timer);
+  }, [demoPhase, storyIndex]);
+
+  // Simulate participant voting
+  useEffect(() => {
+    if (demoPhase === 'thinking') {
+      const delays = [1000, 2000, 3500, 4500, 5500];
+      demoParticipants.forEach((participant, index) => {
+        setTimeout(() => {
+          setParticipantVotes(prev => ({
+            ...prev,
+            [participant.name]: participant.estimate
+          }));
+        }, delays[index]);
+      });
+    } else if (demoPhase === 'reveal') {
+      setShowVotes(true);
+    } else if (demoPhase === 'intro') {
+      setParticipantVotes({});
+      setShowVotes(false);
+    }
+  }, [demoPhase]);
+
+  return (
+    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200 dark:border-gray-700 shadow-2xl">
+      {/* Browser Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+        <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+        <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+        <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 font-mono">scrint.dev/room/H7J9M1</span>
+        <div className="ml-auto flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          Live Demo
+        </div>
+      </div>
+      
+      {/* Demo Content - Fixed Height Container */}
+      <div className="min-h-[400px] flex flex-col">
+        
+        {/* Phase: Intro */}
+        {demoPhase === 'intro' && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-4xl mb-4">🎯</div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                Planning Poker Session Starting...
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Watch how teams estimate user stories collaboratively
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Phase: Story Presentation */}
+        {demoPhase === 'story' && (
+          <div className="flex-1 flex flex-col justify-center space-y-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-700">
+              <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-2">
+                📋 Current Story
+              </h3>
+              <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                {currentStory.title}
+              </h4>
+              <p className="text-gray-600 dark:text-gray-300">
+                {currentStory.description}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                🗣️ Product Owner is explaining the requirements...
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Phase: Voting Cards */}
+        {demoPhase === 'voting' && (
+          <div className="flex-1 flex flex-col justify-center space-y-4">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Choose Your Estimate
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Team members select their estimation cards
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-6 gap-3">
+              {['1', '2', '3', '5', '8', '13'].map((value, index) => (
+                <div 
+                  key={value}
+                  className="aspect-[3/4] bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer"
+                  style={{ 
+                    animation: `cardPulse 2s ease-in-out infinite ${index * 0.1}s`,
+                  }}
+                >
+                  {value}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Phase: Thinking/Voting */}
+        {demoPhase === 'thinking' && (
+          <div className="flex-1 flex flex-col justify-center space-y-6">
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Team is Voting...
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Each member chooses their estimate privately
+              </p>
+            </div>
+            
+            {/* Participants Grid */}
+            <div className="grid grid-cols-5 gap-4">
+              {demoParticipants.map((participant, index) => {
+                const hasVoted = participantVotes[participant.name];
+                const isThinking = !hasVoted;
+                
+                return (
+                  <div key={participant.name} className="text-center">
+                    <div className={`w-16 h-20 rounded-xl border-2 flex items-center justify-center mb-2 transition-all duration-500 ${
+                      hasVoted
+                        ? 'border-green-400 bg-green-50 dark:bg-green-900/20 shadow-lg' 
+                        : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700'
+                    }`}>
+                      {hasVoted ? (
+                        <div className="w-10 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">✓</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs">
+                      <div className="font-medium text-gray-900 dark:text-white">{participant.avatar} {participant.name}</div>
+                      <div className="text-gray-500 dark:text-gray-400">{participant.role}</div>
+                      {hasVoted && (
+                        <div className="text-green-600 dark:text-green-400 font-bold mt-1">Voted ✓</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+              <div className="text-center text-sm">
+                <span className="text-yellow-700 dark:text-yellow-300">
+                  {Object.keys(participantVotes).length}/5 team members have voted
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Phase: Reveal */}
+        {(demoPhase === 'reveal' || demoPhase === 'results') && (
+          <div className="flex-1 flex flex-col justify-center space-y-6">
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                {demoPhase === 'reveal' ? '🎲 Revealing Votes...' : '📊 Voting Results'}
+              </h3>
+            </div>
+            
+            {/* Results Grid */}
+            <div className="grid grid-cols-5 gap-4">
+              {demoParticipants.map((participant, index) => (
+                <div key={participant.name} className="text-center">
+                  <div className="w-16 h-20 rounded-xl border-2 border-blue-300 bg-white dark:bg-gray-700 flex items-center justify-center mb-2 shadow-md">
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      {showVotes ? participant.estimate : '?'}
+                    </span>
+                  </div>
+                  <div className="text-xs">
+                    <div className="font-medium text-gray-900 dark:text-white">{participant.avatar} {participant.name}</div>
+                    <div className="text-gray-500 dark:text-gray-400">{participant.role}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Results Analysis */}
+            {demoPhase === 'results' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                    <div className="text-lg font-bold text-blue-600 dark:text-blue-400">3-8</div>
+                    <div className="text-xs text-blue-800 dark:text-blue-300">Range</div>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                    <div className="text-lg font-bold text-green-600 dark:text-green-400">{currentStory.estimate}</div>
+                    <div className="text-xs text-green-800 dark:text-green-300">Average</div>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                    <div className="text-lg font-bold text-purple-600 dark:text-purple-400">Good</div>
+                    <div className="text-xs text-purple-800 dark:text-purple-300">Consensus</div>
+                  </div>
+                </div>
+                
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                    <span className="text-lg">🎉</span>
+                    <span className="font-medium">Story estimated at {currentStory.estimate} points! Moving to next story...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* Demo Progress Indicator */}
+      <div className="mt-6 flex justify-center">
+        <div className="flex gap-2">
+          {['intro', 'story', 'voting', 'thinking', 'reveal', 'results'].map((phase) => (
+            <div
+              key={phase}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                phase === demoPhase
+                  ? 'bg-blue-500 w-6'
+                  : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
