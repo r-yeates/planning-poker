@@ -456,6 +456,29 @@ export default function RoomPage() {
       console.error('Error kicking participant:', error);
     }  };
 
+  // Function to hand over host role
+  const handleMakeHost = async (participantId: string) => {
+    if (!room || !roomId || !isAdmin) return;
+    // Only allow if participant exists and is not already host
+    if (!room.participants[participantId] || room.participants[participantId].isHost) return;
+    try {
+      // Remove host from current user, assign to selected participant
+      const updatedParticipants = { ...room.participants };
+      Object.keys(updatedParticipants).forEach((id) => {
+        updatedParticipants[id] = {
+          ...updatedParticipants[id],
+          isHost: id === participantId
+        };
+      });
+      const docRef = doc(db, 'rooms', roomId);
+      await updateDoc(docRef, {
+        participants: updatedParticipants
+      });
+    } catch (error) {
+      console.error('Error handing over host:', error);
+    }
+  };
+
   const handleReveal = async () => {
     if (!room || !roomId) return;
     try {
@@ -1073,6 +1096,8 @@ export default function RoomPage() {
                           anonymousVoting={room.anonymousVoting}
                           averageVote={averageVote ?? undefined}
                           onKick={handleKickParticipant}
+                          onMakeHost={handleMakeHost}
+                          isHost={participant.isHost}
                         />
                       );
                     })}
