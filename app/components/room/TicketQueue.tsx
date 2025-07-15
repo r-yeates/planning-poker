@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Room, TicketItem } from '@/lib/firebase';
+import { DragDropContext, Droppable, Draggable, DropResult, DroppableProvided, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
 
 interface TicketQueueProps {
   room: Room;
@@ -22,12 +23,21 @@ export default function TicketQueue({
   const [newTicketTitle, setNewTicketTitle] = useState('');
   const [newTicketDescription, setNewTicketDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-    // Scalability improvements
+  // Scalability improvements
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
   const [currentPage, setCurrentPage] = useState(1);
   const [isCollapsed, setIsCollapsed] = useState(() => room.isTicketQueueCollapsed ?? false);
   const itemsPerPage = 10;
+
+  // Edit state
+  const [editingTicketId, setEditingTicketId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+
+  // Helper to get completed and active tickets
+  const activeTickets = useMemo(() => (room.ticketQueue || []), [room.ticketQueue]);
 
   // Filter and sort tickets
   const filteredAndSortedTickets = useMemo(() => {
@@ -128,6 +138,60 @@ export default function TicketQueue({
       });
     } catch (error) {
       console.error('Error removing ticket:', error);
+    }
+  };
+
+  // Add a handler for drag end
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination || !isAdmin || !roomId) return;
+    const sourceIdx = result.source.index;
+    const destIdx = result.destination.index;
+    if (sourceIdx === destIdx) return;
+    const tickets = [...room.ticketQueue];
+    const [removed] = tickets.splice(sourceIdx, 1);
+    tickets.splice(destIdx, 0, removed);
+    try {
+      const docRef = doc(db, 'rooms', roomId);
+      await updateDoc(docRef, { ticketQueue: tickets });
+    } catch (error) {
+      console.error('Error reordering tickets:', error);
+    }
+  };
+
+  // Only allow drag-and-drop if not filtered, not searched, and not paginated
+  const isDragAndDropEnabled =
+    isAdmin &&
+    !searchTerm &&
+    sortBy === 'newest' &&
+    filteredAndSortedTickets.length === (room.ticketQueue?.length || 0) &&
+    totalPages === 1;
+
+  const startEdit = (ticket: TicketItem) => {
+    setEditingTicketId(ticket.id);
+    setEditTitle(ticket.title);
+    setEditDescription(ticket.description || '');
+  };
+
+  const cancelEdit = () => {
+    setEditingTicketId(null);
+    setEditTitle('');
+    setEditDescription('');
+  };
+
+  const saveEdit = async () => {
+    if (!editingTicketId || !roomId || !isAdmin) return;
+    setIsEditSubmitting(true);
+    try {
+      const updatedTickets = room.ticketQueue.map(t =>
+        t.id === editingTicketId ? { ...t, title: editTitle.trim(), description: editDescription.trim() } : t
+      );
+      const docRef = doc(db, 'rooms', roomId);
+      await updateDoc(docRef, { ticketQueue: updatedTickets });
+      cancelEdit();
+    } catch (error) {
+      console.error('Error editing ticket:', error);
+    } finally {
+      setIsEditSubmitting(false);
     }
   };
 
@@ -255,7 +319,137 @@ export default function TicketQueue({
 
           {/* Ticket List */}
           {filteredAndSortedTickets.length > 0 ? (
-            <>
+            isDragAndDropEnabled ? (
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="ticket-queue">
+                  {(provided: DroppableProvided) => {
+                    return (
+                      <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
+                        {filteredAndSortedTickets.map((ticket, index) => {
+                          const globalIndex = index + 1;
+                          const isCurrent = room.currentTicket === ticket.title;
+                          return (
+                            <Draggable key={ticket.id} draggableId={ticket.id} index={index} isDragDisabled={!isAdmin}>
+                              {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={`bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:shadow-md transition-shadow${isCurrent ? ' ring-2 ring-blue-400 dark:ring-blue-600' : ''} ${snapshot.isDragging ? 'opacity-80' : ''}`}
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded">
+                                            #{globalIndex}
+                                          </span>
+                                          <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                                            {ticket.title}
+                                          </h4>
+                                          {isCurrent && (
+                                            <span className="ml-2 px-2 py-0.5 text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">Current</span>
+                                          )}
+                                        </div>
+                                        {ticket.description && (
+                                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                                            {ticket.description}
+                                          </p>
+                                        )}
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                          <span>Added by {getParticipantName(ticket.addedBy)}</span>
+                                          <span>•</span>
+                                          <span>{new Date(ticket.addedAt).toLocaleDateString()}</span>
+                                        </div>
+                                      </div>                        </div>
+                                    {isAdmin && (
+                                      <div className="flex flex-col items-end ml-2 gap-2">
+                                        <button
+                                          onClick={() => selectTicket(ticket)}
+                                          disabled={isCurrent}
+                                          title={isCurrent ? 'Currently selected' : 'Select for discussion'}
+                                          className={`p-0.5 rounded-full border transition-all duration-200 focus:outline-none ${isCurrent ? 'border-blue-400 bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-200 opacity-100' : 'border-transparent bg-transparent text-gray-300 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900 opacity-30 hover:opacity-100 focus:opacity-100'}`}
+                                          style={{ cursor: isCurrent ? 'default' : 'pointer' }}
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                          </svg>
+                                        </button>
+                                        <button
+                                          onClick={() => removeTicket(ticket)}
+                                          title="Delete ticket"
+                                          className="p-0.5 rounded-full border border-transparent bg-transparent text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900 transition-all duration-200 focus:outline-none opacity-30 hover:opacity-100 focus:opacity-100"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                          </svg>
+                                        </button>
+                                        {editingTicketId !== ticket.id && (
+                                          <button
+                                            onClick={() => startEdit(ticket)}
+                                            className="p-0.5 rounded-full border border-transparent bg-transparent text-gray-300 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900 transition-all duration-200 focus:outline-none opacity-30 hover:opacity-100 focus:opacity-100"
+                                            title="Edit ticket"
+                                          >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6 6M3 17v4h4l12-12a2 2 0 0 0-2.828-2.828L3 17z" />
+                                            </svg>
+                                          </button>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Edit form */}
+                                  {editingTicketId === ticket.id && (
+                                    <div className="mt-2">
+                                      <div className="space-y-2">
+                                        <input
+                                          type="text"
+                                          value={editTitle}
+                                          onChange={e => setEditTitle(e.target.value)}
+                                          className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                                          maxLength={100}
+                                          disabled={isEditSubmitting}
+                                        />
+                                        <textarea
+                                          value={editDescription}
+                                          onChange={e => setEditDescription(e.target.value)}
+                                          className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                                          rows={2}
+                                          maxLength={300}
+                                          disabled={isEditSubmitting}
+                                        />
+                                        <div className="flex gap-2">
+                                          <button
+                                            onClick={saveEdit}
+                                            disabled={!editTitle.trim() || isEditSubmitting}
+                                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:bg-gray-400 text-sm"
+                                          >
+                                            {isEditSubmitting ? 'Saving...' : 'Save'}
+                                          </button>
+                                          <button
+                                            onClick={cancelEdit}
+                                            disabled={isEditSubmitting}
+                                            className="px-3 py-1 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 rounded text-sm"
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </Draggable>
+                          );
+                        })}
+                        {provided.placeholder}
+                      </div>
+                    );
+                  }}
+                </Droppable>
+              </DragDropContext>
+            ) : (
               <div className="space-y-2">
                 {paginatedTickets.map((ticket, index) => {
                   const globalIndex = (currentPage - 1) * itemsPerPage + index + 1;
@@ -289,10 +483,11 @@ export default function TicketQueue({
                               <span>•</span>
                               <span>{new Date(ticket.addedAt).toLocaleDateString()}</span>
                             </div>
-                          </div>                        </div>
+                          </div>
+                        </div>
                         {isAdmin && (
                           <div className="flex flex-col items-end ml-2 gap-2">
-                            {/* Tick icon for select */}                            <button
+                            <button
                               onClick={() => selectTicket(ticket)}
                               disabled={isCurrent}
                               title={isCurrent ? 'Currently selected' : 'Select for discussion'}
@@ -303,7 +498,7 @@ export default function TicketQueue({
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                               </svg>
                             </button>
-                            {/* X icon for delete */}                            <button
+                            <button
                               onClick={() => removeTicket(ticket)}
                               title="Delete ticket"
                               className="p-0.5 rounded-full border border-transparent bg-transparent text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900 transition-all duration-200 focus:outline-none opacity-30 hover:opacity-100 focus:opacity-100"
@@ -312,42 +507,28 @@ export default function TicketQueue({
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                               </svg>
                             </button>
+                            <button
+                              onClick={() => startEdit(ticket)}
+                              className="p-0.5 rounded-full border border-transparent bg-transparent text-gray-300 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900 transition-all duration-200 focus:outline-none opacity-30 hover:opacity-100 focus:opacity-100"
+                              title="Edit ticket"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6 6M3 17v4h4l12-12a2 2 0 0 0-2.828-2.828L3 17z" />
+                              </svg>
+                            </button>
                           </div>
                         )}
                       </div>
                     </div>
                   );
                 })}
+                {isAdmin && (filteredAndSortedTickets.length !== (room.ticketQueue?.length || 0) || totalPages > 1) && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Drag-and-drop reordering is only available when all tickets are shown (no search/filter/pagination).
+                  </div>
+                )}
               </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredAndSortedTickets.length)} of {filteredAndSortedTickets.length}
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
-                      className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-50 disabled:hover:bg-gray-200 dark:disabled:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors"
-                    >
-                      ←
-                    </button>
-                    <span className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400">
-                      {currentPage} / {totalPages}
-                    </span>
-                    <button
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages}
-                      className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-50 disabled:hover:bg-gray-200 dark:disabled:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors"
-                    >
-                      →
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
+            )
           ) : (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -363,5 +544,6 @@ export default function TicketQueue({
           )}
         </div>
       )}
-    </div>  );
+    </div>
+  );
 }
