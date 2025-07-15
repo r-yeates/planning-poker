@@ -338,6 +338,8 @@ export default function RoomPage() {
   };
   const handleVote = async (value: number | string) => {
     if (!room || !roomId || !userId) return;
+    // Prevent voting if votes are revealed
+    if (room.votesRevealed) return;
 
     setSelectedCard(value);
     try {
