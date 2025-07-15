@@ -205,7 +205,7 @@ export default function RoomPage() {
     
     // Update previous state for next comparison
     setPreviousRoundState(currentState);
-  }, [room?.votesRevealed, room?.votes, hasJoined, previousRoundState, showNewRoundNotification, room]);
+  }, [room?.votesRevealed, room?.votes, hasJoined, showNewRoundNotification, room]);
   // Sync selected card with user's vote in database
   useEffect(() => {
     if (!room || !userId) return;
@@ -1332,7 +1332,7 @@ export default function RoomPage() {
         />
       )}
     </div>
-    <PrivacyTermsFooter />
+    {/* <PrivacyTermsFooter /> */}
     </>
   );
 }
