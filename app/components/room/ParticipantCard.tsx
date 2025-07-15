@@ -28,8 +28,7 @@ export default function ParticipantCard({
   anonymousVoting,
   averageVote,
   onKick,
-  onMakeHost,
-  isHost
+  onMakeHost
 }: ParticipantCardProps) {
   const hasVoted = vote !== undefined;
     // Determine border color based on voting status
