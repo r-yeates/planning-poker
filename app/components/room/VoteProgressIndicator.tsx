@@ -22,11 +22,11 @@ export default function VoteProgressIndicator({
   const [isRoundActive, setIsRoundActive] = useState(false);
 
   // Calculate voting stats excluding spectators
-  const votersOnly = Object.entries(room?.participants || {}).filter(([_, participant]) => 
+  const votersOnly = Object.entries(room?.participants || {}).filter(([, participant]) => 
     participant.role !== 'spectator'
   );
   const voterCount = votersOnly.length;
-  const votedCount = votersOnly.filter(([id, _]) => room?.votes[id]).length;
+  const votedCount = votersOnly.filter(([id]) => room?.votes[id]).length;
   const allVotersHaveVoted = voterCount > 0 && votedCount === voterCount;
   
   // Track round start/reset

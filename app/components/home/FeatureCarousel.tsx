@@ -89,7 +89,7 @@ export default function FeatureCarousel() {
     <div className="w-full max-w-none mx-auto px-4 border-t border-b border-gray-200 dark:border-gray-700 py-16">
       {/* Header */}      <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-          Transform Your Team's Estimation Process
+          Transform Your Team&apos;s Estimation Process
         </h2>
         <p className="text-lg text-gray-600 dark:text-gray-300">
           See why 10,000+ agile teams choose our planning poker tool to deliver better results faster

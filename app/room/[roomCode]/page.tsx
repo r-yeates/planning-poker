@@ -1,13 +1,13 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { doc, onSnapshot, updateDoc, deleteDoc, deleteField } from 'firebase/firestore';
 import { db, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
 import { trackParticipantJoinedSafe, trackVoteCastSafe, trackVotingRoundCompletedSafe, trackRoomClosedSafe } from '@/lib/analytics-buffer';
 import type { Room } from '@/lib/firebase';
 import { ESTIMATION_SCALES, type ScaleType } from '@/lib/estimation-scales';
-import packageJson from '../../../package.json';
 
 import NamePrompt from '@/app/components/room/NamePrompt';
 import ThemeToggle from '@/app/components/global/ThemeToggle';
@@ -15,9 +15,10 @@ import ParticipantCard from '@/app/components/room/ParticipantCard';
 import VotingCards from '@/app/components/room/VotingCards';
 import VoteProgressIndicator from '@/app/components/room/VoteProgressIndicator';
 import KeyboardShortcuts from '@/app/components/room/KeyboardShortcuts';
-import ConfettiCelebration, { triggerVoteRevealConfetti } from '@/app/components/room/ConfettiCelebration';
+import { triggerVoteRevealConfetti } from '@/app/components/room/ConfettiCelebration';
 import TicketQueue from '@/app/components/room/TicketQueue';
 import VotingTimer from '@/app/components/room/VotingTimer';
+import PrivacyTermsFooter from '@/app/components/global/PrivacyTermsFooter';
 
 export default function RoomPage() {
   const { roomCode } = useParams();
@@ -204,7 +205,7 @@ export default function RoomPage() {
     
     // Update previous state for next comparison
     setPreviousRoundState(currentState);
-  }, [room?.votesRevealed, room?.votes, hasJoined]);
+  }, [room?.votesRevealed, room?.votes, hasJoined, previousRoundState, showNewRoundNotification, room]);
   // Sync selected card with user's vote in database
   useEffect(() => {
     if (!room || !userId) return;
@@ -219,7 +220,7 @@ export default function RoomPage() {
       console.log('User vote cleared, clearing selected card');
       setSelectedCard(null);
     }
-  }, [room?.votes, userId, selectedCard]);
+  }, [room?.votes, userId, selectedCard, room]);
   // Clear selected card when votes are reset (new round)
   useEffect(() => {
     // If room exists and votes object is empty (reset), clear selected card
@@ -227,7 +228,7 @@ export default function RoomPage() {
       console.log('Votes were cleared, resetting selected card');
       setSelectedCard(null);
     }
-  }, [room?.votes, selectedCard]);
+  }, [room?.votes, selectedCard, room]);
   // Auto-reveal votes when all players have voted (if enabled)
   useEffect(() => {
     console.log('Auto-reveal effect triggered:', {
@@ -252,10 +253,10 @@ export default function RoomPage() {
     }
     
     // Use corrected voter counting logic (exclude spectators)
-    const votersOnly = Object.entries(room.participants).filter(([_, participant]) => 
+    const votersOnly = Object.entries(room.participants).filter(([, participant]) => 
       participant.role !== 'spectator'
     );
-    const voterIds = votersOnly.map(([id, _]) => id);
+    const voterIds = votersOnly.map(([id]) => id);
     const votedIds = Object.keys(room.votes || {});
     const votersWhoVoted = voterIds.filter(id => votedIds.includes(id));
     
@@ -290,18 +291,29 @@ export default function RoomPage() {
     } else {
       console.log('Not all voters have voted yet, waiting...');
     }
-  }, [room?.votes, room?.participants, room?.votesRevealed, room?.autoReveal, roomId]);
+  }, [room?.votes, room?.participants, room?.votesRevealed, room?.autoReveal, roomId, room]);
 
   // Function to copy room link to clipboard
   const copyRoomLink = async () => {
     if (!room?.roomCode) return;
     const shareUrl = `${window.location.origin}/room/${room.roomCode}`;
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        // Fallback for unsupported browsers
+        const tempInput = document.createElement('input');
+        tempInput.value = shareUrl;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+    } catch {
+      setCopied(false);
+      alert('Failed to copy link. Please copy it manually.');
     }
   };
 
@@ -319,7 +331,7 @@ export default function RoomPage() {
       } else {
         await copyRoomLink();
       }
-    } catch (err) {
+    } catch {
       // Fall back to copying to clipboard if sharing fails
       await copyRoomLink();
     }
@@ -339,7 +351,9 @@ export default function RoomPage() {
     } catch (error) {
       console.error('Error voting:', error);
     }
-  };  const handleNameSubmit = async (name: string, password?: string) => {
+  };
+
+  const handleNameSubmit = useCallback(async (name: string, password?: string) => {
     console.log('🚀 handleNameSubmit called:', { 
       name, 
       hasPassword: !!password, 
@@ -421,13 +435,17 @@ export default function RoomPage() {
       setError('Failed to join room. Please reload and try again.');
     } finally {
       setJoining(false);
-    }  };
+    }
+  }, [userId, roomId, room]);
 
   const handleKickParticipant = async (participantId: string) => {
     if (!room || !roomId || !isAdmin) return;
     try {
-      const { [participantId]: removed, ...remainingParticipants } = room.participants;
-      const { [participantId]: removedVote, ...remainingVotes } = room.votes || {};
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [participantId]: _removed, ...remainingParticipants } = room.participants;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [participantId]: _removedVote, ...remainingVotes } = room.votes || {};
+      // Note: _removed and _removedVote are intentionally unused as we only need the remaining objects
 
       const docRef = doc(db, 'rooms', roomId);
       await updateDoc(docRef, {
@@ -486,6 +504,7 @@ export default function RoomPage() {
       const newRole = currentRole === 'spectator' ? 'voter' : 'spectator';
       
       const docRef = doc(db, 'rooms', roomId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updateData: any = {
         [`participants.${userId}.role`]: newRole
       };
@@ -516,8 +535,11 @@ export default function RoomPage() {
     setIsLeavingRoom(true); // Prevent error states while leaving
     
     try {
-      const { [userId]: removed, ...remainingParticipants } = room.participants;
-      const { [userId]: removedVote, ...remainingVotes } = room.votes || {};
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [userId]: _removed, ...remainingParticipants } = room.participants;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [userId]: _removedVote, ...remainingVotes } = room.votes || {};
+      // Note: _removed and _removedVote are intentionally unused as we only need the remaining objects
 
       const docRef = doc(db, 'rooms', roomId);
         // If this is the last participant, delete the room
@@ -563,6 +585,7 @@ export default function RoomPage() {
     }  };
   
   // Room Settings Functions (moved from AdminPanel)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateRoomSetting = async (field: keyof Room, value: any, additionalUpdates?: Record<string, any>) => {
     if (!isAdmin || !roomId) return;
     
@@ -617,13 +640,13 @@ export default function RoomPage() {
         console.log('Auto-joining user from home page...');
         handleNameSubmit(userName);
       }
-    }  }, [room, roomId, userId, showNamePrompt, hasJoined]);
+    }  }, [room, roomId, userId, showNamePrompt, hasJoined, handleNameSubmit]);
   // Calculate voting stats excluding spectators
-  const votersOnly = Object.entries(room?.participants || {}).filter(([_, participant]) => 
+  const votersOnly = Object.entries(room?.participants || {}).filter(([, participant]) => 
     participant.role !== 'spectator'
   );
   const voterCount = votersOnly.length;
-  const votedCount = votersOnly.filter(([id, _]) => room?.votes[id]).length;
+  const votedCount = votersOnly.filter(([id]) => room?.votes[id]).length;
   const allVotersHaveVoted = voterCount > 0 && votedCount === voterCount;
 
   if (isLoading) {
@@ -678,7 +701,7 @@ export default function RoomPage() {
   const averageVote = room.votesRevealed
     ? (() => {
         const numericVotes = votes
-          .map(([_, v]) => v.value)
+          .map(([, v]) => v.value)
           .filter((value): value is number => typeof value === 'number' && !isNaN(value));
         
         return numericVotes.length > 0 
@@ -691,7 +714,7 @@ export default function RoomPage() {
   const consensusData = room.votesRevealed && votes.length > 0
     ? (() => {
         const numericVotes = votes
-          .map(([_, v]) => v.value)
+          .map(([, v]) => v.value)
           .filter((value): value is number => typeof value === 'number' && !isNaN(value));
         
         if (numericVotes.length < 2) return null;
@@ -743,6 +766,7 @@ export default function RoomPage() {
         };
       })()
     : null;return (
+    <>
     <div className="min-h-screen p-8 bg-gray-50 dark:bg-gray-900">
       {/* Header - Wide Container */}
       <div className="max-w-7xl mx-auto mb-8">
@@ -750,14 +774,24 @@ export default function RoomPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="relative w-8 h-8">
-              <img src="/logo-dark.png" alt="Sprintro Logo" className="w-8 h-8 rounded-lg block dark:hidden" />
-              <img src="/logo.png" alt="Sprintro Logo" className="w-8 h-8 rounded-lg hidden dark:block" />
+              <Image src="/logo-dark.png" alt="Sprintro Logo" width={32} height={32} className="rounded-lg block dark:hidden" />
+              <Image src="/logo.png" alt="Sprintro Logo" width={32} height={32} className="rounded-lg hidden dark:block" />
             </span>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Sprintro</h1>
           </div>
             {/* Room Info and Admin Controls */}
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            
+            {/* Timer Button - Show to everyone when running, admin controls when not */}
+            {hasJoined && roomId && (
+              <VotingTimer
+                room={room}
+                roomId={roomId}
+                isAdmin={isAdmin}
+                compact={true}
+              />
+            )}
             
             <button
               onClick={shareRoom}
@@ -1017,9 +1051,14 @@ export default function RoomPage() {
               </div>
               <div className="space-y-3">
                   {Object.entries(room.participants)
-                    .sort(([, a], [, b]) => (a.isHost ? -1 : b.isHost ? 1 : 0))
+                    .sort(([, a], [, b]) => {
+                      // Primary sort: hosts first
+                      if (a.isHost && !b.isHost) return -1;
+                      if (!a.isHost && b.isHost) return 1;
+                      // Secondary sort: stable alphabetical by name
+                      return a.name.localeCompare(b.name);
+                    })
                     .map(([id, participant]) => {
-                      const hasVoted = !!room.votes?.[id];
                       const isCurrentUser = id === userId;
                       
                       return (
@@ -1059,7 +1098,7 @@ export default function RoomPage() {
                 {(() => {
                   const totalVotes = votes.length;
                   const numericVotes = votes
-                    .map(([_, v]) => v.value)
+                    .map(([, v]) => v.value)
                     .filter((value): value is number => typeof value === 'number' && !isNaN(value));
                   const nonNumericCount = totalVotes - numericVotes.length;
                   
@@ -1144,16 +1183,7 @@ export default function RoomPage() {
               )}
             </div>
           </div>
-        )}        {/* Voting Timer */}
-        {hasJoined && roomId && (
-          <VotingTimer
-            room={room}
-            roomId={roomId}
-            isAdmin={isAdmin}
-          />
-        )}
-
-        {/* Voting Cards */}
+        )}        {/* Voting Cards */}
         <VotingCards
           room={room}
           userId={userId}
@@ -1166,6 +1196,9 @@ export default function RoomPage() {
           <div className="flex justify-center">
             {!room.votesRevealed ? (
               (() => {
+                // Check voting status for button styling
+                // const votersOnly = Object.entries(room.participants).filter(([, p]) => p.role !== 'spectator');
+                // const votedIds = Object.keys(room.votes || {});
                 return (
                   <div className="flex flex-col items-center gap-2">
                     <button
@@ -1211,7 +1244,7 @@ export default function RoomPage() {
           </div>
         )}        {/* Version Footer */}
         <div className="text-center mt-8 space-y-1">
-          <p className="text-xs text-gray-400 dark:text-gray-500">v{packageJson.version}</p>
+          {/* <p className="text-xs text-gray-400 dark:text-gray-500">v{packageJson.version}</p> */}
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Press <kbd className="px-2 py-1 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-gray-600 dark:text-gray-300">H</kbd> for keyboard shortcuts
           </p>
@@ -1274,5 +1307,7 @@ export default function RoomPage() {
         />
       )}
     </div>
+    <PrivacyTermsFooter />
+    </>
   );
 }

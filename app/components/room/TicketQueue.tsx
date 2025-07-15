@@ -26,7 +26,7 @@ export default function TicketQueue({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
   const [currentPage, setCurrentPage] = useState(1);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => room.isTicketQueueCollapsed ?? false);
   const itemsPerPage = 10;
 
   // Filter and sort tickets
@@ -68,7 +68,7 @@ export default function TicketQueue({
   // Reset page when filter changes
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchTerm, sortBy]);
+  }, []);
 
   const addTicket = async () => {
     if (!newTicketTitle.trim() || !userId || !roomId) return;
@@ -133,7 +133,7 @@ export default function TicketQueue({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">        <div className="flex items-center justify-between">
+      <div className={`p-4${!isCollapsed ? ' border-b border-gray-200 dark:border-gray-700' : ''}`}>        <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}

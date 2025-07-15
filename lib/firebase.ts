@@ -95,6 +95,7 @@ export interface Room {
   timer?: TimerState; // Optional timer state
   roundHistory: RoundResult[];
   scaleType: ScaleType;
+  isTicketQueueCollapsed?: boolean;
 }
 
 // Function to get room by code
@@ -145,6 +146,7 @@ export const incrementAnalytic = async (metric: keyof Omit<GlobalAnalytics, 'las
   } catch (error) {
     console.log(`⚠️ Document not found, initializing analytics...`);
     // If document doesn't exist, create it
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((error as any).code === 'not-found') {
       await initializeAnalytics();
       const analyticsRef = doc(db, 'analytics', 'global');

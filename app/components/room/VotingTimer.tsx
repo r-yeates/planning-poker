@@ -9,19 +9,19 @@ interface VotingTimerProps {
   room: Room;
   roomId: string;
   isAdmin: boolean;
+  compact?: boolean;
 }
 
-export default function VotingTimer({ room, roomId, isAdmin }: VotingTimerProps) {
+export default function VotingTimer({ room, roomId, isAdmin, compact = false }: VotingTimerProps) {
   const [timeInput, setTimeInput] = useState('5');
   const [remainingTime, setRemainingTime] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);  // Calculate remaining time from room data
-  const [showControls, setShowControls] = useState(false);  const [showNotification, setShowNotification] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);  const [showControls, setShowControls] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
   const [notificationVisible, setNotificationVisible] = useState(false); // For animation
   const [notificationExiting, setNotificationExiting] = useState(false); // For exit animation
-  const [isNotificationVisible, setIsNotificationVisible] = useState(false);
   const [wasRunning, setWasRunning] = useState(false);
-  const timerActive = !!(room.timer && (room.timer.isRunning || (room.timer.startTime && room.timer.duration > 0)));
   const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (room.timer && room.timer.isRunning && room.timer.startTime) {
@@ -105,29 +105,27 @@ export default function VotingTimer({ room, roomId, isAdmin }: VotingTimerProps)
     };
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowControls(false);
+      }
+    };
+
+    if (showControls) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showControls]);
+
   // Reset notification state when starting or stopping timer
   const resetNotificationState = () => {
     setShowNotification(false);
     setNotificationVisible(false);
     setNotificationExiting(false);
     if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
-  };
-
-  // Show timer banner when running OR when admin wants to configure it
-  if (!isRunning && !showControls && !showNotification) {
-    return isAdmin ? (
-      <div className="flex justify-end mb-2">
-        <button
-          onClick={() => { setShowControls(true); resetNotificationState(); }}
-          className="flex items-center gap-1 px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-green-400"
-          title="Start Timer"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v18l15-9L5 3z" /></svg>
-          Start
-        </button>
-      </div>
-    ) : null;
-  }  // Show notification when timer ends
+  };  // Show notification when timer ends
   if (showNotification) {
     return (
       <div
@@ -235,6 +233,164 @@ export default function VotingTimer({ room, roomId, isAdmin }: VotingTimerProps)
     if (remainingTime <= 60) return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800';
     return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
   };
+
+  // Compact mode for header button
+  if (compact) {
+    // Timer is running - show countdown to all users, controls only for admins
+    if (isRunning) {
+      return (
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={isAdmin ? () => setShowControls(!showControls) : undefined}
+            className={`flex items-center gap-2 px-3 py-2 h-10 rounded-lg border transition-colors ${
+              remainingTime <= 30 
+                ? 'bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50'
+                : remainingTime <= 60
+                  ? 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
+                  : 'bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
+            }`}
+            title={isAdmin ? "Timer running - click for options" : `Timer: ${formatTime(remainingTime)} remaining`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-mono font-bold">
+              {formatTime(remainingTime)}
+            </span>
+          </button>
+
+          {/* Timer Controls Dropdown - Only show for admins */}
+          {isAdmin && showControls && (
+            <div className="absolute top-12 right-0 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-[200px]">
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Timer Controls</div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      addTime(1);
+                      setShowControls(false);
+                    }}
+                    className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+                  >
+                    +1 min
+                  </button>
+                  <button
+                    onClick={() => {
+                      addTime(2);
+                      setShowControls(false);
+                    }}
+                    className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+                  >
+                    +2 min
+                  </button>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    resetTimer();
+                    setShowControls(false);
+                  }}
+                  className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                >
+                  Stop Timer
+                </button>
+                
+                <button
+                  onClick={() => setShowControls(false)}
+                  className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Timer not running - only show start button to admins
+    if (!isAdmin) return null;
+
+    return (
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setShowControls(!showControls)}
+          className="flex items-center gap-2 px-3 py-2 h-10 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          title="Start Timer"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="text-sm">Timer</span>
+        </button>
+
+        {/* Timer Setup Dropdown */}
+        {showControls && (
+          <div className="absolute top-12 right-0 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 min-w-[220px]">
+            <div className="space-y-3">
+              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Start Voting Timer</div>
+              
+              <div className="space-y-2">
+                <label className="block text-xs text-gray-600 dark:text-gray-400">Duration (minutes)</label>
+                <input
+                  type="number"
+                  value={timeInput}
+                  onChange={(e) => setTimeInput(e.target.value)}
+                  min="1"
+                  max="60"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="5"
+                />
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => setTimeInput('2')}
+                  className="px-2 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded transition-colors"
+                >
+                  2m
+                </button>
+                <button
+                  onClick={() => setTimeInput('5')}
+                  className="px-2 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded transition-colors"
+                >
+                  5m
+                </button>
+                <button
+                  onClick={() => setTimeInput('10')}
+                  className="px-2 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded transition-colors"
+                >
+                  10m
+                </button>
+              </div>
+              
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => {
+                    startTimer();
+                    setShowControls(false);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold shadow hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-150"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Start
+                </button>
+                <button
+                  onClick={() => setShowControls(false)}
+                  className="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`p-4 rounded-lg border shadow transition-all duration-300 ${

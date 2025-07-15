@@ -173,10 +173,12 @@ const flushBuffer = async (immediate: boolean = false): Promise<void> => {
     // Write aggregated events to Firebase
     const promises: Promise<void>[] = [];
     
-    for (const [key, event] of aggregated) {
+    for (const [, event] of aggregated) {
       if (event.type === 'global') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         promises.push(incrementAnalytic(event.metric as any, event.value));
       } else if (event.type === 'daily' && event.date) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         promises.push(incrementDailyAnalytic(event.metric as any, event.value));
       }
     }

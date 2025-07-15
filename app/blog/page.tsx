@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import ThemeToggle from '../components/global/ThemeToggle'
 
 export const metadata: Metadata = {
@@ -70,10 +71,12 @@ export default function BlogPage() {
       {/* Navigation Header */}
       <nav className="flex items-center justify-between p-6 max-w-7xl mx-auto">
         <Link href="/" className="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-          <img 
+          <Image 
             src="/logo.png" 
             alt="Sprintro Logo" 
-            className="w-8 h-8 rounded-lg"
+            width={32}
+            height={32}
+            className="rounded-lg"
           />
           Sprintro
         </Link>
@@ -182,7 +185,7 @@ export default function BlogPage() {
                 All <span className="text-blue-600 dark:text-blue-400">Articles</span>
               </h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {blogPosts.map((post, index) => (
+                {blogPosts.map((post) => (
                   <div key={post.id} className="group relative h-full">
                     <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl blur opacity-20 group-hover:opacity-50 transition duration-500"></div>
                     <Link href={`/blog/${post.id}`}>

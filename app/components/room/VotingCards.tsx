@@ -38,7 +38,7 @@ export default function VotingCards({
         <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 p-6 rounded-lg text-center">
           <div className="text-2xl mb-2">👁️</div>
           <h3 className="text-base font-semibold text-purple-700 dark:text-purple-300 mb-2">
-            You're in Spectator Mode
+            You&apos;re in Spectator Mode
           </h3>
           <p className="text-purple-600 dark:text-purple-400 text-sm">
             You can observe the voting process but cannot participate. Click the toggle above to switch back to voting mode.

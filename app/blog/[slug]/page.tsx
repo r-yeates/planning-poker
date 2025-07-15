@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import ThemeToggle from '../../components/global/ThemeToggle'
 
 // Blog post data - in a real app, this would come from a CMS or database
@@ -128,7 +129,7 @@ const blogPosts = {
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Common Pitfalls to Avoid</h2>
           <div className="space-y-4">
             <div className="border-l-4 border-red-500 bg-red-50 dark:bg-red-900/20 p-4 rounded-r-lg">
-              <h3 className="font-semibold text-red-900 dark:text-red-100 mb-2">Don't discuss estimates before revealing</h3>
+              <h3 className="font-semibold text-red-900 dark:text-red-100 mb-2">Don&apos;t discuss estimates before revealing</h3>
               <p className="text-red-800 dark:text-red-200">This defeats the purpose of avoiding anchoring bias</p>
             </div>
             <div className="border-l-4 border-orange-500 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-r-lg">
@@ -136,7 +137,7 @@ const blogPosts = {
               <p className="text-orange-800 dark:text-orange-200">Planning poker estimates relative complexity, not precise duration</p>
             </div>
             <div className="border-l-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-r-lg">
-              <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Don't average different estimates</h3>
+              <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">Don&apos;t average different estimates</h3>
               <p className="text-yellow-800 dark:text-yellow-200">Use discussion to understand the differences and reach true consensus</p>
             </div>
           </div>
@@ -149,7 +150,7 @@ const blogPosts = {
           </p>
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
             <h3 className="text-xl font-semibold mb-4">🚀 Try it yourself!</h3>
-            <p className="mb-4">Our free planning poker tool makes it easy to run sessions with your team, whether you're co-located or distributed.</p>
+            <p className="mb-4">Our free planning poker tool makes it easy to run sessions with your team, whether you&apos;re co-located or distributed.</p>
             <Link 
               href="/"
               className="inline-flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
@@ -282,10 +283,12 @@ export default async function BlogPost({ params }: Props) {
       {/* Navigation Header */}
       <nav className="relative z-10 flex items-center justify-between p-6 max-w-7xl mx-auto">
         <Link href="/" className="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-          <img 
+          <Image 
             src="/logo.png" 
             alt="Sprintro Logo" 
-            className="w-8 h-8 rounded-lg"
+            width={32}
+            height={32}
+            className="rounded-lg"
           />
           Sprintro
         </Link>

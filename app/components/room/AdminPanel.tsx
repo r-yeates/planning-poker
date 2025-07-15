@@ -21,6 +21,7 @@ export default function AdminPanel({
 }: AdminPanelProps) {
   const [isCollapsed, setIsCollapsed] = useState(true);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateRoomSetting = async (field: keyof Room, value: any, additionalUpdates?: Record<string, any>) => {
     if (!isAdmin || !roomId) return;
     

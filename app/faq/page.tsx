@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import ThemeToggle from '../components/global/ThemeToggle'
 
 export const metadata: Metadata = {
@@ -148,10 +149,12 @@ export default function FAQPage() {
       {/* Navigation Header */}
       <nav className="flex items-center justify-between p-6 max-w-7xl mx-auto">
         <Link href="/" className="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-          <img 
+          <Image 
             src="/logo.png" 
             alt="Sprintro Logo" 
-            className="w-8 h-8 rounded-lg"
+            width={32}
+            height={32}
+            className="rounded-lg"
           />
           Sprintro
         </Link>
@@ -251,7 +254,7 @@ export default function FAQPage() {
               Still Have Questions?
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-              Didn't find what you were looking for? Check out our comprehensive blog articles for detailed guides and best practices.
+              Didn&apos;t find what you were looking for? Check out our comprehensive blog articles for detailed guides and best practices.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 

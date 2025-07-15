@@ -17,12 +17,11 @@ export default function PlanningPokerDemo() {
     { name: "Morgan", color: "bg-pink-500 border-pink-500", vote: "8" },
   ];
 
-  // Voting order (scattered timing)
-  const votingOrder = [0, 3, 1, 4, 2]; // Amy, Taylor, Sam, Morgan, Jamie
-
   // Step through the demo
   useEffect(() => {
-    let timers: NodeJS.Timeout[] = [];
+    // Voting order (scattered timing)
+    const votingOrder = [0, 3, 1, 4, 2]; // Amy, Taylor, Sam, Morgan, Jamie
+    const timers: NodeJS.Timeout[] = [];
     if (step === 0) {
       // Show ticket for 2s, then go to participants joining
       timers.push(setTimeout(() => setStep(1), 2000));
@@ -91,7 +90,7 @@ export default function PlanningPokerDemo() {
 
       {/* Participants */}
       <div className="flex justify-center gap-2 mb-4">
-        {participants.map((p, i) => (
+        {participants.map((p) => (
           <div
             key={p.name}
             className={`flex flex-col items-center transition-opacity duration-500 ${step >= 1 ? "opacity-100" : "opacity-0"}`}

@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { addDoc, collection, where, query, getDocs } from 'firebase/firestore';
+import { addDoc, collection } from 'firebase/firestore';
 import { db, generateUniqueRoomCode, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
 import { trackRoomCreatedSafe } from '@/lib/analytics-buffer';
 import { type ScaleType } from '@/lib/estimation-scales';
-import packageJson from '../package.json';
 import ThemeToggle from './components/global/ThemeToggle';
 import Link from 'next/link';
-import TextTransition from 'react-text-transition';
+import CustomTextTransition from './components/global/CustomTextTransition';
 import PlanningPokerDemo from './components/home/PlanningPokerDemo';
+import Image from 'next/image';
 
 // Room Templates Configuration
 interface RoomTemplate {
@@ -100,10 +100,10 @@ export default function HomePage() {
     setError('');
     setIsCreating(true);
     try {
-      const userId = ensureUserId();
+      ensureUserId();
 
       const roomCode = await generateUniqueRoomCode();
-      const roomData: any = {
+      const roomData: Record<string, unknown> = {
         roomCode,
         participants: {}, // Start with empty participants - user will be added when they enter their name
         votes: {},
@@ -111,7 +111,7 @@ export default function HomePage() {
         autoReveal: false, // Default to auto-reveal disabled
         anonymousVoting: false, // Default to non-anonymous voting
         showTooltips: false, // Default to tooltips disabled
-        confettiEnabled: true, // Default to confetti enabled
+        confettiEnabled: false, // Always set confetti to false on room creation
         currentTicket: '',
         ticketQueue: [], // Start with empty ticket queue
         scaleType: 'fibonacci', // Default to fibonacci, admins can change it later
@@ -121,7 +121,8 @@ export default function HomePage() {
           duration: 0,
           isRunning: false
         },
-        roundHistory: []
+        roundHistory: [],
+        isTicketQueueCollapsed: true, // Always collapse ticket queue on room creation
       };
       
       // Add password if provided
@@ -155,10 +156,10 @@ export default function HomePage() {
     setError('');
     setIsCreating(true);
     try {
-      const userId = ensureUserId();
+      ensureUserId();
 
       const roomCode = await generateUniqueRoomCode();
-      const roomData: any = {
+      const roomData: Record<string, unknown> = {
         roomCode,
         participants: {}, // Start with empty participants - user will be added when they enter their name
         votes: {},
@@ -166,7 +167,7 @@ export default function HomePage() {
         autoReveal: template.autoReveal,
         anonymousVoting: template.anonymousVoting,
         showTooltips: template.showTooltips,
-        confettiEnabled: true, // Default to confetti enabled for templates
+        confettiEnabled: false, // Always set confetti to false on room creation
         currentTicket: '',
         ticketQueue: [], // Start with empty ticket queue
         scaleType: template.scaleType,
@@ -176,7 +177,8 @@ export default function HomePage() {
           duration: 0,
           isRunning: false
         },
-        roundHistory: []
+        roundHistory: [],
+        isTicketQueueCollapsed: true, // Always collapse ticket queue on room creation
       };
       
       // Add password if provided (templates don't include passwords by default)
@@ -231,7 +233,7 @@ export default function HomePage() {
       }
 
       // Store user info and redirect
-      const userId = ensureUserId();
+      ensureUserId();
       
       // Set verification flag for auto-join
       sessionStorage.setItem('roomJoinVerified', normalizedCode);
@@ -300,8 +302,8 @@ export default function HomePage() {
               <div className="flex items-center gap-3">
                 {/* Logo for nav bar */}
                 <span className="relative w-12 h-12">
-                  <img src="/logo-dark.png" alt="Sprintro Logo" className="w-12 h-12 rounded-lg shadow-sm block dark:hidden" />
-                  <img src="/logo.png" alt="Sprintro Logo" className="w-12 h-12 rounded-lg shadow-sm hidden dark:block" />
+                  <Image src="/logo-dark.png" alt="Sprintro Logo" width={48} height={48} className="rounded-lg shadow-sm block dark:hidden" />
+                  <Image src="/logo.png" alt="Sprintro Logo" width={48} height={48} className="rounded-lg shadow-sm hidden dark:block" />
                 </span>
                 <span className="font-semibold text-2xl md:text-2xl text-slate-900 dark:text-slate-100">Sprintro</span>
               </div>
@@ -332,33 +334,23 @@ export default function HomePage() {
             </nav>
           </div>
           
-          <div className="relative max-w-7xl mx-auto px-6 py-8 lg:py-12">
+          <div className="relative max-w-7xl mx-auto px-6">
             <div className="text-center max-w-5xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-full text-sm font-medium text-indigo-700 dark:text-indigo-300 mb-8">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+              <div className="inline-flex items-center gap-2 px-4 py-1 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-full text-md font-medium text-indigo-700 dark:text-indigo-300 mb-3">
+                {/* <div className="w-2 h-2 bg-indigo-500 rounded-full"></div> */}
                 Free Forever • No Account Required • Start Immediately
               </div>
-              
               <h1 className="text-5xl lg:text-7xl font-bold mb-6 text-slate-900 dark:text-slate-100">
-                Effortless
-                <br />
-                <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">
-                  Agile Estimation
-                </span>
+                <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">Planning Poker</span>
               </h1>
-                <div className="text-xl lg:text-2xl text-slate-600 dark:text-slate-300 mb-12 h-16 flex items-center justify-center">
-                <TextTransition className="font-medium max-w-4xl">
+              <div className="text-xl lg:text-2xl text-slate-600 dark:text-slate-300 mb-6 h-16 flex items-center justify-center">
+                <CustomTextTransition className="font-medium max-w-4xl">
                   {heroTexts[heroTextIndex]}
-                </TextTransition>
-              </div>
-
-              {/* Demo Cards */}
-              <div className="mb-0 lg:mb-16">
-                <PlanningPokerDemo />
+                </CustomTextTransition>
               </div>
 
               {/* Quick Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                 <button
                   onClick={() => createRoomWithTemplate('sprint-planning')}
                   disabled={isCreating || isJoining}
@@ -381,7 +373,13 @@ export default function HomePage() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Explore Templates                </button>
+                  Explore Templates
+                </button>
+              </div>
+
+              {/* Demo Cards */}
+              <div className="mb-0 lg:mb-16">
+                <PlanningPokerDemo />
               </div>
             </div>
           </div>
@@ -438,7 +436,7 @@ export default function HomePage() {
                   darkBorderColor: 'indigo-800',
                   darkTextColor: 'indigo-300'
                 }
-              ].map((template, index) => (
+              ].map((template) => (
                 <div key={template.id} className="group relative">
                   <button
                     onClick={() => createRoomWithTemplate(template.id)}
@@ -695,7 +693,7 @@ export default function HomePage() {
                     </div>
                     
                     <div className="grid grid-cols-5 gap-2">
-                      {['1', '2', '3', '5', '8'].map((value, index) => (
+                      {['1', '2', '3', '5', '8'].map((value) => (
                         <div 
                           key={value}
                           className="aspect-square bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm"
@@ -811,8 +809,8 @@ export default function HomePage() {
               <div className="flex items-center gap-3">
                 {/* Logo for footer */}
                 <span className="relative w-8 h-8">
-                  <img src="/logo-dark.png" alt="Sprintro Logo" className="w-8 h-8 rounded-lg block dark:hidden" />
-                  <img src="/logo.png" alt="Sprintro Logo" className="w-8 h-8 rounded-lg hidden dark:block" />
+                  <Image src="/logo-dark.png" alt="Sprintro Logo" className="w-8 h-8 rounded-lg block dark:hidden" width={32} height={32} />
+                  <Image src="/logo.png" alt="Sprintro Logo" className="w-8 h-8 rounded-lg hidden dark:block" width={32} height={32} />
                 </span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">Sprintro</span>
               </div>

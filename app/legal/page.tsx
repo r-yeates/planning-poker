@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image'
 import ThemeToggle from '../components/global/ThemeToggle';
 import packageJson from '../../package.json';
 
@@ -101,7 +102,7 @@ export default function LegalPage() {
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Children's Privacy</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Children&apos;s Privacy</h2>
         <p className="text-gray-700 dark:text-gray-300 mb-4">
           Our service is not directed to children under the age of 13. We do not knowingly collect personal 
           information from children under 13. If you become aware that a child has provided us with personal 
@@ -113,7 +114,7 @@ export default function LegalPage() {
         <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Changes to This Privacy Policy</h2>
         <p className="text-gray-700 dark:text-gray-300 mb-4">
           We may update this privacy policy from time to time. We will notify you of any changes by posting the 
-          new privacy policy on this page and updating the "Last updated" date. You are advised to review this 
+          new privacy policy on this page and updating the &quot;Last updated&quot; date. You are advised to review this 
           privacy policy periodically for any changes.
         </p>
       </section>
@@ -138,7 +139,7 @@ export default function LegalPage() {
       <section className="mb-8">
         <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">1. Acceptance of Terms</h2>
         <p className="text-gray-700 dark:text-gray-300 mb-4">
-          By accessing and using Sprintro ("the Service"), you accept and agree to be bound by the terms 
+          By accessing and using Sprintro (&quot;the Service&quot;), you accept and agree to be bound by the terms 
           and provision of this agreement. If you do not agree to these terms, you should not use this service.
         </p>
       </section>
@@ -165,7 +166,7 @@ export default function LegalPage() {
           <li>Respect other participants and maintain professional conduct</li>
           <li>Not attempt to interfere with or disrupt the service</li>
           <li>Not use the service to share inappropriate, offensive, or illegal content</li>
-          <li>Not attempt to gain unauthorized access to other users' sessions or data</li>
+          <li>Not attempt to gain unauthorized access to other users&apos; sessions or data</li>
           <li>Keep room passwords secure and only share them with intended participants</li>
         </ul>
       </section>
@@ -224,7 +225,7 @@ export default function LegalPage() {
       <section className="mb-8">
         <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">8. Disclaimers</h2>
         <p className="text-gray-700 dark:text-gray-300 mb-4">
-          The service is provided "as is" without any warranties, express or implied. We do not warrant that:
+          The service is provided &quot;as is&quot; without any warranties, express or implied. We do not warrant that:
         </p>
         <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-1">
           <li>The service will be uninterrupted or error-free</li>
@@ -269,10 +270,12 @@ export default function LegalPage() {
       <div className="max-w-4xl mx-auto mb-8">
         <div className="flex items-center justify-between mb-8">
           <Link href="/" className="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-            <img 
+            <Image 
               src="/logo.png" 
               alt="Sprintro Logo" 
-              className="w-8 h-8 rounded-lg"
+              width={32}
+              height={32}
+              className="rounded-lg"
             />
             Sprintro
           </Link>
