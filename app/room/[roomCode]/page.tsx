@@ -792,7 +792,7 @@ export default function RoomPage() {
       })()
     : null;return (
     <>
-    <div className="min-h-screen p-8 bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen p-8 bg-slate-50 dark:bg-[#0f0f0f]">
       {/* Header - Wide Container */}
       <div className="max-w-7xl mx-auto mb-8">
         {/* Header with theme toggle */}
@@ -802,7 +802,7 @@ export default function RoomPage() {
               <Image src="/logo-dark.png" alt="Sprintro Logo" width={32} height={32} className="rounded-lg block dark:hidden" />
               <Image src="/logo.png" alt="Sprintro Logo" width={32} height={32} className="rounded-lg hidden dark:block" />
             </span>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Sprintro</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-[#f1f1f1]">Sprintro</h1>
           </div>
             {/* Room Info and Admin Controls */}
           <div className="flex items-center gap-2">
@@ -820,7 +820,7 @@ export default function RoomPage() {
             
             <button
               onClick={shareRoom}
-              className="flex items-center gap-2 px-3 py-2 h-10 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 h-10 rounded-lg border bg-white dark:bg-[#212121] border-slate-200 dark:border-[#303030] text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#303030] transition-colors"
               title="Click to copy room link"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -856,7 +856,7 @@ export default function RoomPage() {
                 className={`flex items-center gap-2 px-3 py-2 h-10 rounded-lg border transition-colors ${
                   room.participants[userId].role === 'spectator'
                     ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50'
-                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    : 'bg-white dark:bg-[#212121] border-slate-200 dark:border-[#303030] text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#303030]'
                 }`}
                 title={room.participants[userId].role === 'spectator' ? 'Switch to Voting Mode' : 'Switch to Spectator Mode'}
               >
@@ -899,7 +899,7 @@ export default function RoomPage() {
       <div className="max-w-7xl mx-auto">        <div className="grid lg:grid-cols-4 gap-6">          {/* Left Column - Voting Info & Participants */}
           <div className="lg:col-span-1 space-y-6">
             {/* Vote Progress, Current Ticket & Room Settings - Combined */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-[#212121] rounded-lg shadow border border-slate-200 dark:border-[#303030]">
               {/* Vote Progress */}
               <div className="px-3 py-2">
                 <VoteProgressIndicator room={room} compact={true} showDetails={false} />
@@ -907,9 +907,9 @@ export default function RoomPage() {
               
               {/* Current Ticket */}
               {room.currentTicket && (
-                <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700">
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Current Ticket</div>
-                  <div className="text-sm text-gray-800 dark:text-gray-200 font-medium line-clamp-2">
+                <div className="px-3 py-2 border-t border-slate-200 dark:border-[#303030]">
+                  <div className="text-xs text-slate-500 dark:text-[#888888] mb-1">Current Ticket</div>
+                  <div className="text-sm text-slate-800 dark:text-[#cccccc] font-medium line-clamp-2">
                     {room.currentTicket}
                   </div>
                 </div>
@@ -919,18 +919,18 @@ export default function RoomPage() {
               {isAdmin && (
                 <>
                   {/* Room Settings Header with toggle */}
-                  <div className="border-t border-gray-200 dark:border-gray-700">
+                  <div className="border-t border-slate-200 dark:border-[#303030]">
                     <button
                       onClick={() => setIsRoomSettingsCollapsed(!isRoomSettingsCollapsed)}
-                      className="w-full p-3 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="w-full p-3 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-[#303030] transition-colors"
                     >
                       <div className="flex items-center gap-2">        
                         <div>
-                          <h3 className="text-base font-medium text-gray-800 dark:text-gray-200">Room Settings</h3>
+                          <h3 className="text-base font-medium text-slate-800 dark:text-[#cccccc]">Room Settings</h3>
                         </div>
                       </div>
                       <svg 
-                        className={`w-4 h-4 text-gray-400 transition-transform ${isRoomSettingsCollapsed ? '' : 'rotate-180'}`} 
+                        className={`w-4 h-4 text-slate-400 transition-transform ${isRoomSettingsCollapsed ? '' : 'rotate-180'}`} 
                         fill="none" 
                         stroke="currentColor" 
                         viewBox="0 0 24 24"
@@ -941,16 +941,16 @@ export default function RoomPage() {
 
                     {/* Room Settings Collapsible Content */}
                     {!isRoomSettingsCollapsed && (
-                      <div className="px-3 pb-3 space-y-3 border-t border-gray-200 dark:border-gray-700 pt-3">
+                      <div className="px-3 pb-3 space-y-3 border-t border-slate-200 dark:border-[#303030] pt-3">
                         {/* Scale Management */}
                         <div className="space-y-1">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <label className="block text-sm font-medium text-slate-700 dark:text-[#cccccc]">
                             Estimation Scale
                           </label>
                           <select 
                             value={room.scaleType || 'fibonacci'} 
                             onChange={(e) => changeScale(e.target.value as ScaleType)}
-                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                            className="w-full p-2 border border-slate-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-slate-900 dark:text-[#f1f1f1] focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
                             disabled={!room.votesRevealed}
                           >
                             {Object.values(ESTIMATION_SCALES).map((scale) => (
@@ -960,22 +960,22 @@ export default function RoomPage() {
                             ))}
                           </select>
                           {!room.votesRevealed && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-slate-500">
                               Scale can be changed after votes are revealed
                             </p>
                           )}
                         </div>
 
                         {/* Auto-Reveal Setting */}
-                        <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                        <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-[#181818] rounded">
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Auto-reveal votes</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">Auto-show when everyone votes</div>
+                            <div className="text-sm font-medium text-slate-900 dark:text-[#f1f1f1]">Auto-reveal votes</div>
+                            <div className="text-xs text-slate-500 dark:text-[#888888]">Auto-show when everyone votes</div>
                           </div>
                           <button
                             onClick={toggleAutoReveal}
                             className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                              room.autoReveal ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                              room.autoReveal ? 'bg-blue-600' : 'bg-slate-200 dark:bg-[#404040]'
                             }`}
                             role="switch"
                             aria-checked={room.autoReveal}
@@ -990,10 +990,10 @@ export default function RoomPage() {
                         </div>
                         
                         {/* Anonymous Voting Setting */}
-                        <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                        <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-[#181818] rounded">
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Anonymous voting</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">Hide names during voting</div>
+                            <div className="text-sm font-medium text-slate-900 dark:text-[#f1f1f1]">Anonymous voting</div>
+                            <div className="text-xs text-slate-500 dark:text-[#888888]">Hide names during voting</div>
                           </div>
                           <button
                             onClick={toggleAnonymousVoting}
@@ -1119,9 +1119,9 @@ export default function RoomPage() {
           <div className="lg:col-span-3 space-y-6">
             {/* Average Vote Display */}
             {room.votesRevealed && averageVote !== null && (
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-                <h2 className="text-base font-medium text-gray-700 dark:text-gray-300">Average Vote</h2>
-                <p className="text-xl text-gray-900 dark:text-gray-100">{averageVote.toFixed(1)}</p>
+              <div className="bg-white dark:bg-[#212121] p-4 rounded-lg shadow border border-slate-200 dark:border-[#303030]">
+                <h2 className="text-base font-medium text-slate-700 dark:text-[#cccccc]">Average Vote</h2>
+                <p className="text-xl text-slate-900 dark:text-[#f1f1f1]">{averageVote.toFixed(1)}</p>
                 {(() => {
                   const totalVotes = votes.length;
                   const numericVotes = votes
@@ -1130,7 +1130,7 @@ export default function RoomPage() {
                   const nonNumericCount = totalVotes - numericVotes.length;
                   
                   return nonNumericCount > 0 && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-sm text-slate-500 dark:text-[#888888] mt-1">
                       Based on {numericVotes.length} numeric vote{numericVotes.length !== 1 ? 's' : ''} 
                       {nonNumericCount > 0 && ` (${nonNumericCount} abstention${nonNumericCount !== 1 ? 's' : ''})`}
                     </p>
@@ -1188,7 +1188,7 @@ export default function RoomPage() {
                 <span className={consensusData.textColor}>Low</span>
                 <span className={consensusData.textColor}>High</span>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div className="w-full bg-slate-200 dark:bg-[#404040] rounded-full h-2">
                 <div 
                   className={`h-2 rounded-full transition-all duration-500 ${
                     consensusData.consensus >= 90 ? 'bg-green-500' :

@@ -10,7 +10,7 @@ export default function PlanningPokerDemo() {
   const [revealed, setRevealed] = useState(false);
   // Demo participants and votes
   const participants = [
-    { name: "Amy", color: "bg-indigo-500 border-indigo-500", vote: "3" },
+    { name: "Amy", color: "bg-slate-500 border-slate-500", vote: "3" },
     { name: "Sam", color: "bg-emerald-500 border-emerald-500", vote: "5" },
     { name: "Jamie", color: "bg-amber-500 border-amber-500", vote: "5" },
     { name: "Taylor", color: "bg-violet-500 border-violet-500", vote: "5" },
@@ -100,7 +100,7 @@ export default function PlanningPokerDemo() {
             >
               {p.name[0]}
             </div>
-            <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{p.name}</span>
+            <span className="text-xs text-slate-700 dark:text-[#cccccc] font-medium">{p.name}</span>
           </div>
         ))}
       </div>
@@ -111,16 +111,16 @@ export default function PlanningPokerDemo() {
           <div key={i} className="relative aspect-[3/4]">
             {/* Card back (before flip) */}
             <div
-              className={`absolute inset-0 flex items-center justify-center rounded-xl shadow-md border-2 border-slate-300 dark:border-slate-600 bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 transition-transform duration-500 ${flipped[i] ? "rotate-y-180" : ""}`}
+              className={`absolute inset-0 flex items-center justify-center rounded-xl shadow-md border-2 border-slate-300 dark:border-[#404040] bg-gradient-to-br from-slate-200 to-slate-300 dark:from-[#303030] dark:to-[#404040] transition-transform duration-500 ${flipped[i] ? "rotate-y-180" : ""}`}
               style={{ backfaceVisibility: "hidden", zIndex: 1 }}
             >
-              <span className="text-2xl font-bold text-slate-500 dark:text-slate-400">?</span>
+              <span className="text-2xl font-bold text-slate-500 dark:text-[#888888]">?</span>
             </div>
             {/* Card front (after flip) */}
             <div
               className={`absolute inset-0 flex items-center justify-center rounded-xl shadow-md border-2 ${p.color} bg-gradient-to-br ${
                 i === 0
-                  ? "from-indigo-500 to-indigo-600"
+                  ? "from-slate-500 to-slate-600"
                   : i === 1
                   ? "from-emerald-500 to-emerald-600"
                   : i === 2
@@ -146,27 +146,27 @@ export default function PlanningPokerDemo() {
       {/* Status */}
       <div className="mt-6 text-center min-h-8">
         {step === 0 && (
-          <span className="text-slate-500 dark:text-slate-400 text-sm animate-pulse">
+          <span className="text-slate-500 dark:text-[#aaaaaa] text-sm animate-pulse">
             Reading user story...
           </span>
         )}
         {step === 1 && (
-          <span className="text-slate-500 dark:text-slate-400 text-sm animate-pulse">
+          <span className="text-slate-500 dark:text-[#aaaaaa] text-sm animate-pulse">
             Team members joining...
           </span>
         )}
         {step === 2 && (
-          <span className="text-slate-500 dark:text-slate-400 text-sm animate-pulse">
+          <span className="text-slate-500 dark:text-[#aaaaaa] text-sm animate-pulse">
             Voting in progress...
           </span>
         )}
         {step === 3 && (
-          <span className="text-slate-500 dark:text-slate-400 text-sm animate-pulse">
+          <span className="text-slate-500 dark:text-[#aaaaaa] text-sm animate-pulse">
             Revealing cards...
           </span>
         )}
         {step === 4 && (
-          <span className="inline-flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-semibold text-base">
+          <span className="inline-flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold text-base">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"

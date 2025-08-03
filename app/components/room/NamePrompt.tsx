@@ -44,11 +44,11 @@ export default function NamePrompt({ onSubmit, requiresPassword, passwordError, 
     onSubmit(name.trim(), password.trim() || undefined);
   };  return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+      <div className="bg-white dark:bg-[#212121] rounded-lg p-6 w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
           {requiresPassword ? 'Enter Name & Password' : 'Enter Your Name'}
         </h2>
-        <p className="text-gray-600 dark:text-gray-300 mb-4">
+        <p className="text-gray-600 dark:text-[#aaaaaa] mb-4">
           {requiresPassword 
             ? 'This room is password-protected. Please enter your name and the room password.'
             : 'Please enter your name to join the planning poker session.'
@@ -65,12 +65,12 @@ export default function NamePrompt({ onSubmit, requiresPassword, passwordError, 
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Your name"
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all"
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-[#404040] bg-white dark:bg-[#181818] text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all"
             disabled={isLoading}
             autoFocus
           />          {requiresPassword && (
             <div>
-              <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">
+              <label className="block text-sm text-gray-600 dark:text-[#aaaaaa] mb-1">
                 Password (required)
               </label>
               <input
@@ -78,7 +78,7 @@ export default function NamePrompt({ onSubmit, requiresPassword, passwordError, 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Room password"
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-[#404040] bg-white dark:bg-[#181818] text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all"
                 disabled={isLoading}
               />
             </div>

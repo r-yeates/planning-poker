@@ -31,6 +31,8 @@ export default function HomePage() {
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState('');
+  const [isNavVisible, setIsNavVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const router = useRouter();
 
   // Text transition states (only for hero)
@@ -85,6 +87,29 @@ export default function HomePage() {
     }, 3500); // Change every 3.5 seconds
     return () => clearInterval(interval);
   }, [heroTexts.length]);
+
+  // Navigation scroll behavior
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY < 100) {
+        // Always show nav at top
+        setIsNavVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 200) {
+        // Hide when scrolling down
+        setIsNavVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        // Show when scrolling up
+        setIsNavVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   // Memoize callback functions for better performance
   const ensureUserId = useCallback(() => {
@@ -289,41 +314,38 @@ export default function HomePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-        {/* Hero Section with integrated nav */}
-        <section className="relative bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950/30 overflow-hidden">
-          <div className="absolute inset-0">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#22272b_1px,transparent_1px),linear-gradient(to_bottom,#22272b_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#94a3b8_1px,transparent_1px),linear-gradient(to_bottom,#94a3b8_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)] opacity-20"></div>
-          </div>
-          
-          {/* Navigation Bar - now inside hero section */}
-          <div className="relative max-w-7xl mx-auto px-6 py-4">
-            <nav className="flex items-center justify-between">
+      />      <div className="min-h-screen bg-slate-50 dark:bg-[#0f0f0f]">
+        {/* Floating Navigation Bar */}
+        <nav className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 max-w-6xl w-full mx-auto px-6 transition-all duration-300 ${
+          isNavVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+        }`}>
+          <div className="bg-white/80 dark:bg-[#212121]/95 backdrop-blur-md border border-white/20 dark:border-[#303030] rounded-2xl px-8 py-4 shadow-xl">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {/* Logo for nav bar */}
-                <span className="relative w-12 h-12">
-                  <Image src="/logo-dark.png" alt="Sprintro Logo" width={48} height={48} className="rounded-lg shadow-sm block dark:hidden" />
-                  <Image src="/logo.png" alt="Sprintro Logo" width={48} height={48} className="rounded-lg shadow-sm hidden dark:block" />
+                <span className="relative w-10 h-10">
+                  <Image src="/logo-dark.png" alt="Sprintro Logo" width={40} height={40} className="rounded-lg shadow-sm block dark:hidden" />
+                  <Image src="/logo.png" alt="Sprintro Logo" width={40} height={40} className="rounded-lg shadow-sm hidden dark:block" />
                 </span>
-                <span className="font-semibold text-2xl md:text-2xl text-slate-900 dark:text-slate-100">Sprintro</span>
+                <span className="font-semibold text-xl text-slate-900 dark:text-white">Sprintro</span>
               </div>
               
               <div className="flex items-center gap-2">
                 <Link
                   href="/blog"
-                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all duration-200"
+                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-[#303030] rounded-lg transition-all duration-200"
                 >
                   Blog
                 </Link>
                 <Link
                   href="/faq"
-                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all duration-200"
+                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-[#303030] rounded-lg transition-all duration-200"
                 >
                   FAQ
                 </Link>
                 <Link
                   href="/analytics"
-                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all duration-200"
+                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-[#303030] rounded-lg transition-all duration-200"
                 >
                   Analytics
                 </Link>
@@ -331,68 +353,76 @@ export default function HomePage() {
                   <ThemeToggle />
                 </div>
               </div>
-            </nav>
+            </div>
+          </div>
+        </nav>
+
+        {/* Hero Section */}
+        <section className="relative bg-gradient-to-br from-slate-50 via-white to-slate-100/30 dark:from-[#0f0f0f] dark:via-[#181818] dark:to-[#212121] overflow-hidden pt-20">
+          <div className="absolute inset-0">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#22272b_1px,transparent_1px),linear-gradient(to_bottom,#22272b_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#303030_1px,transparent_1px),linear-gradient(to_bottom,#303030_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)] opacity-40"></div>
           </div>
           
           <div className="relative max-w-7xl mx-auto px-6">
-            <div className="text-center max-w-5xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-4 py-1 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-full text-md font-medium text-indigo-700 dark:text-indigo-300 mb-3">
-                {/* <div className="w-2 h-2 bg-indigo-500 rounded-full"></div> */}
-                Free Forever • No Account Required • Start Immediately
-              </div>
-              <h1 className="text-5xl lg:text-7xl font-bold mb-6 text-slate-900 dark:text-slate-100">
-                <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">Planning Poker</span>
-              </h1>
-              <div className="text-xl lg:text-2xl text-slate-600 dark:text-slate-300 mb-6 h-16 flex items-center justify-center">
-                <CustomTextTransition className="font-medium max-w-4xl">
-                  {heroTexts[heroTextIndex]}
-                </CustomTextTransition>
+            <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[85vh]">
+              {/* Left Column - Title and Buttons */}
+              <div className="space-y-8 text-center lg:text-left">
+                <h1 className="text-4xl lg:text-6xl xl:text-7xl font-bold text-slate-900 dark:text-[#f1f1f1] leading-tight">
+                  <span className="bg-gradient-to-r from-[#3b82f6] via-[#8b5cf6] to-[#06b6d4] bg-clip-text text-transparent dark:from-[#60a5fa] dark:via-[#a78bfa] dark:to-[#22d3ee]">Planning Poker</span>
+                </h1>
+                <div className="text-lg lg:text-xl text-slate-600 dark:text-[#aaaaaa] h-12 flex items-center justify-center lg:justify-start">
+                  <CustomTextTransition className="font-medium">
+                    {heroTexts[heroTextIndex]}
+                  </CustomTextTransition>
+                </div>
+
+                {/* Quick Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                  <button
+                    onClick={() => createRoomWithTemplate('sprint-planning')}
+                    disabled={isCreating || isJoining}
+                    className="inline-flex items-center gap-3 bg-[#3b82f6] hover:bg-[#2563eb] text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Start Planning Session
+                  </button>
+                  <button
+                    onClick={() => {
+                      document.getElementById('templates')?.scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                      });
+                    }}
+                    className="inline-flex items-center gap-3 bg-transparent hover:bg-[#272727] text-slate-900 dark:text-[#f1f1f1] px-8 py-4 rounded-xl font-semibold text-lg border-2 border-slate-300 dark:border-[#404040] hover:border-[#3b82f6] dark:hover:border-[#60a5fa] shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Explore Templates
+                  </button>
+                </div>
               </div>
 
-              {/* Quick Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-                <button
-                  onClick={() => createRoomWithTemplate('sprint-planning')}
-                  disabled={isCreating || isJoining}
-                  className="inline-flex items-center gap-3 bg-gradient-to-r from-indigo-600 to-violet-700 hover:from-indigo-700 hover:to-violet-800 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Start Planning Session
-                </button>
-                <button
-                  onClick={() => {
-                    document.getElementById('templates')?.scrollIntoView({ 
-                      behavior: 'smooth',
-                      block: 'start'
-                    });
-                  }}
-                  className="inline-flex items-center gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 px-8 py-4 rounded-xl font-semibold text-lg border border-slate-200 dark:border-slate-600 shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Explore Templates
-                </button>
-              </div>
-
-              {/* Demo Cards */}
-              <div className="mb-0 lg:mb-16">
-                <PlanningPokerDemo />
+              {/* Right Column - Demo Cards */}
+              <div className="relative">
+                <div className="bg-white/60 dark:bg-[#212121]/80 backdrop-blur-sm border border-slate-200/50 dark:border-[#303030] rounded-3xl p-8 shadow-2xl">
+                  <PlanningPokerDemo />
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* Templates Section */}
-        <section id="templates" className="py-24 bg-white dark:bg-slate-800">
+        <section id="templates" className="py-24 bg-white dark:bg-[#181818]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16">
-              <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+              <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4">
                 Choose Your Method
               </h2>
-              <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
+              <p className="text-xl text-slate-600 dark:text-[#aaaaaa] max-w-3xl mx-auto">
                 Select from professionally configured templates or customize your own estimation approach
               </p>
             </div>
@@ -428,20 +458,20 @@ export default function HomePage() {
                   id: 'story-refinement',
                   name: 'Story Refinement',
                   description: 'Detailed estimation sessions with manual reveal for thorough discussion',
-                  color: 'from-indigo-500 to-violet-600',
-                  bgColor: 'indigo-50',
-                  borderColor: 'indigo-200',
-                  textColor: 'indigo-700',
-                  darkBgColor: 'indigo-950/50',
-                  darkBorderColor: 'indigo-800',
-                  darkTextColor: 'indigo-300'
+                  color: 'from-[#3b82f6] to-[#8b5cf6]',
+                  bgColor: 'slate-50',
+                  borderColor: 'slate-200',
+                  textColor: 'slate-700',
+                  darkBgColor: '[#272727]',
+                  darkBorderColor: '[#404040]',
+                  darkTextColor: '[#f1f1f1]'
                 }
               ].map((template) => (
                 <div key={template.id} className="group relative">
                   <button
                     onClick={() => createRoomWithTemplate(template.id)}
                     disabled={isCreating || isJoining}
-                    className="relative w-full bg-white dark:bg-slate-700 p-8 rounded-2xl border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                    className="relative w-full bg-white dark:bg-[#212121] p-8 rounded-2xl border border-slate-200 dark:border-[#303030] hover:border-slate-300 dark:hover:border-[#404040] hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-left"
                   >
                     <div className="flex items-center gap-4 mb-6">
                       <div className={`w-14 h-14 bg-gradient-to-br ${template.color} rounded-xl flex items-center justify-center shadow-md`}>
@@ -449,11 +479,11 @@ export default function HomePage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
                       </div>
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                         {template.name}
                       </h3>
                     </div>
-                    <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
+                    <p className="text-slate-600 dark:text-[#aaaaaa] mb-6 leading-relaxed">
                       {template.description}
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -463,12 +493,12 @@ export default function HomePage() {
                          'Modified Fibonacci'}
                       </span>
                       {ROOM_TEMPLATES[template.id]?.autoReveal && (
-                        <span className="px-3 py-1 bg-slate-100 dark:bg-slate-600 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-500 rounded-full text-sm font-medium">
+                        <span className="px-3 py-1 bg-slate-100 dark:bg-[#303030] text-slate-700 dark:text-[#cccccc] border border-slate-200 dark:border-[#404040] rounded-full text-sm font-medium">
                           Auto Reveal
                         </span>
                       )}
                       {ROOM_TEMPLATES[template.id]?.anonymousVoting && (
-                        <span className="px-3 py-1 bg-slate-100 dark:bg-slate-600 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-500 rounded-full text-sm font-medium">
+                        <span className="px-3 py-1 bg-slate-100 dark:bg-[#303030] text-slate-700 dark:text-[#cccccc] border border-slate-200 dark:border-[#404040] rounded-full text-sm font-medium">
                           Anonymous
                         </span>
                       )}
@@ -479,32 +509,32 @@ export default function HomePage() {
             </div>
 
             {/* Custom Room Section */}
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-3xl p-8 lg:p-12 border border-slate-200 dark:border-slate-600">
+            <div className="bg-slate-50 dark:bg-[#212121] rounded-3xl p-8 lg:p-12 border border-slate-200 dark:border-[#303030]">
               <div className="text-center mb-12">
-                <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+                <h3 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
                   Custom Configuration
                 </h3>
-                <p className="text-lg text-slate-600 dark:text-slate-300">
+                <p className="text-lg text-slate-600 dark:text-[#aaaaaa]">
                   Create a personalized room or join an existing estimation session
                 </p>
               </div>
 
               <div className="grid lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
                 {/* Create Room */}
-                <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-600 shadow-sm">
+                <div className="bg-white dark:bg-[#181818] p-8 rounded-2xl border border-slate-200 dark:border-[#303030] shadow-sm">
                   <div className="text-center mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md">
+                    <div className="w-16 h-16 bg-gradient-to-br from-[#3b82f6] to-[#8b5cf6] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md">
                       <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
                     </div>
-                    <h4 className="text-xl font-bold text-slate-900 dark:text-slate-100">Create New Room</h4>
-                    <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">Host your own estimation session</p>
+                    <h4 className="text-xl font-bold text-slate-900 dark:text-white">Create New Room</h4>
+                    <p className="text-slate-600 dark:text-[#aaaaaa] text-sm mt-1">Host your own estimation session</p>
                   </div>
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-[#cccccc] mb-2">
                         Room Password
                       </label>
                       <input
@@ -512,7 +542,7 @@ export default function HomePage() {
                         value={roomPassword}
                         onChange={(e) => setRoomPassword(e.target.value)}
                         placeholder="Optional security password"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all outline-none"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-[#303030] bg-white dark:bg-[#212121] text-slate-900 dark:text-white focus:border-[#3b82f6] dark:focus:border-[#60a5fa] focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all outline-none"
                         disabled={isCreating || isJoining}
                       />
                     </div>
@@ -520,7 +550,7 @@ export default function HomePage() {
                     <button
                       onClick={createRoom}
                       disabled={isCreating || isJoining}
-                      className="w-full bg-gradient-to-r from-indigo-600 to-violet-700 hover:from-indigo-700 hover:to-violet-800 text-white py-3 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                      className="w-full bg-[#3b82f6] hover:bg-[#2563eb] text-white py-3 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                     >
                       {isCreating ? (
                         <span className="flex items-center justify-center gap-2">
@@ -536,20 +566,20 @@ export default function HomePage() {
                 </div>
 
                 {/* Join Room */}
-                <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-600 shadow-sm">
+                <div className="bg-white dark:bg-[#181818] p-8 rounded-2xl border border-slate-200 dark:border-[#303030] shadow-sm">
                   <div className="text-center mb-6">
                     <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md">
                       <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                       </svg>
                     </div>
-                    <h4 className="text-xl font-bold text-slate-900 dark:text-slate-100">Join Existing Room</h4>
-                    <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">Enter an active estimation session</p>
+                    <h4 className="text-xl font-bold text-slate-900 dark:text-white">Join Existing Room</h4>
+                    <p className="text-slate-600 dark:text-[#aaaaaa] text-sm mt-1">Enter an active estimation session</p>
                   </div>
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-[#cccccc] mb-2">
                         Room Code
                       </label>
                       <input
@@ -558,13 +588,13 @@ export default function HomePage() {
                         onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                         placeholder="Enter 5-character code"
                         maxLength={5}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800 font-mono text-center text-xl tracking-wider transition-all outline-none"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-[#303030] bg-white dark:bg-[#212121] text-slate-900 dark:text-white focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800 font-mono text-center text-xl tracking-wider transition-all outline-none"
                         disabled={isCreating || isJoining}
                       />
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-[#cccccc] mb-2">
                         Password
                       </label>
                       <input
@@ -572,7 +602,7 @@ export default function HomePage() {
                         value={joinPassword}
                         onChange={(e) => setJoinPassword(e.target.value)}
                         placeholder="Enter if room is protected"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800 transition-all outline-none"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-[#303030] bg-white dark:bg-[#212121] text-slate-900 dark:text-white focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800 transition-all outline-none"
                         disabled={isCreating || isJoining}
                       />
                     </div>
@@ -597,7 +627,7 @@ export default function HomePage() {
               </div>
 
               {error && (
-                <div className="mt-8 p-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl text-center">
+                <div className="mt-8 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl text-center">
                   <p className="text-red-700 dark:text-red-400 font-medium">{error}</p>
                 </div>
               )}
@@ -606,13 +636,13 @@ export default function HomePage() {
         </section>
 
         {/* Features Section */}
-        <section className="py-24 bg-slate-50 dark:bg-slate-900">
+        <section className="py-24 bg-slate-50 dark:bg-[#0f0f0f]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16">
-              <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+              <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4">
                 Enterprise-Grade Features
               </h2>
-              <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
+              <p className="text-xl text-slate-600 dark:text-[#aaaaaa] max-w-3xl mx-auto">
                 Built for professional teams who demand reliability, accuracy, and seamless collaboration
               </p>
             </div>
@@ -628,7 +658,7 @@ export default function HomePage() {
                     ),
                     title: 'Rapid Consensus Building',
                     description: 'Eliminate lengthy discussions with simultaneous voting that prevents cognitive bias and anchoring effects.',
-                    color: 'from-indigo-500 to-violet-600'
+                    color: 'from-[#3b82f6] to-[#8b5cf6]'
                   },
                   {
                     icon: (
@@ -666,10 +696,10 @@ export default function HomePage() {
                       {feature.icon}
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                         {feature.title}
                       </h3>
-                      <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                      <p className="text-slate-600 dark:text-[#aaaaaa] leading-relaxed">
                         {feature.description}
                       </p>
                     </div>
@@ -678,33 +708,33 @@ export default function HomePage() {
               </div>
 
               <div className="relative">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 border border-slate-200 dark:border-slate-600 shadow-lg">
+                <div className="bg-white dark:bg-[#212121] rounded-2xl p-8 border border-slate-200 dark:border-[#303030] shadow-lg">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                     <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
                     <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                    <span className="ml-auto text-sm text-slate-500 dark:text-slate-400 font-mono">sprintro.dev</span>
+                    <span className="ml-auto text-sm text-slate-500 dark:text-[#888888] font-mono">sprintro.dev</span>
                   </div>
                   
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">SC</div>
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Team estimation in progress...</span>
+                      <div className="w-8 h-8 bg-[#3b82f6] rounded-lg flex items-center justify-center text-white font-bold text-sm">SC</div>
+                      <span className="text-sm font-medium text-slate-700 dark:text-[#cccccc]">Team estimation in progress...</span>
                     </div>
                     
                     <div className="grid grid-cols-5 gap-2">
                       {['1', '2', '3', '5', '8'].map((value) => (
                         <div 
                           key={value}
-                          className="aspect-square bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm"
+                          className="aspect-square bg-gradient-to-br from-[#3b82f6] to-[#8b5cf6] rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm"
                         >
                           {value}
                         </div>
                       ))}
                     </div>
                     
-                    <div className="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
-                      <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -719,44 +749,44 @@ export default function HomePage() {
         </section>
 
         {/* Resources Section */}
-        <section className="py-24 bg-white dark:bg-slate-800">
+        <section className="py-24 bg-white dark:bg-[#181818]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16">
-              <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+              <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4">
                 Knowledge Center
               </h2>
-              <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
+              <p className="text-xl text-slate-600 dark:text-[#aaaaaa] max-w-3xl mx-auto">
                 Expert guidance and best practices for successful agile estimation
               </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-950/20 dark:to-violet-950/20 rounded-2xl p-8 border border-indigo-200 dark:border-indigo-800">
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-[#272727] dark:to-[#303030] rounded-2xl p-8 border border-slate-200 dark:border-[#404040]">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-gradient-to-br from-[#3b82f6] to-[#8b5cf6] rounded-lg flex items-center justify-center">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Expert Articles</h3>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Expert Articles</h3>
                 </div>
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                    <span className="text-slate-700 dark:text-slate-300">Planning Poker Fundamentals</span>
+                    <span className="text-slate-700 dark:text-[#cccccc]">Planning Poker Fundamentals</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-violet-500 rounded-full"></div>
-                    <span className="text-slate-700 dark:text-slate-300">Avoiding Estimation Bias</span>
+                    <div className="w-2 h-2 bg-[#8b5cf6] rounded-full"></div>
+                    <span className="text-slate-700 dark:text-[#cccccc]">Avoiding Estimation Bias</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                    <span className="text-slate-700 dark:text-slate-300">Remote Team Best Practices</span>
+                    <span className="text-slate-700 dark:text-[#cccccc]">Remote Team Best Practices</span>
                   </div>
                 </div>
                 <Link 
                   href="/blog"
-                  className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-medium transition-colors shadow-md hover:shadow-lg"
+                  className="inline-flex items-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white px-6 py-3 rounded-xl font-medium transition-colors shadow-md hover:shadow-lg"
                 >
                   Read Articles
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -772,20 +802,20 @@ export default function HomePage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Frequently Asked</h3>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Frequently Asked</h3>
                 </div>
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                    <span className="text-slate-700 dark:text-slate-300">Understanding Story Points</span>
+                    <span className="text-slate-700 dark:text-[#cccccc]">Understanding Story Points</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
-                    <span className="text-slate-700 dark:text-slate-300">Handling Estimation Conflicts</span>
+                    <span className="text-slate-700 dark:text-[#cccccc]">Handling Estimation Conflicts</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
-                    <span className="text-slate-700 dark:text-slate-300">Scaling Agile Estimation</span>
+                    <span className="text-slate-700 dark:text-[#cccccc]">Scaling Agile Estimation</span>
                   </div>
                 </div>
                 <Link 
@@ -803,7 +833,7 @@ export default function HomePage() {
         </section>
 
         {/* Footer */}
-        <footer className="bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
+        <footer className="bg-slate-50 dark:bg-[#0f0f0f] border-t border-slate-200 dark:border-[#303030]">
           <div className="max-w-7xl mx-auto px-6 py-12">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex items-center gap-3">
@@ -812,20 +842,20 @@ export default function HomePage() {
                   <Image src="/logo-dark.png" alt="Sprintro Logo" className="w-8 h-8 rounded-lg block dark:hidden" width={32} height={32} />
                   <Image src="/logo.png" alt="Sprintro Logo" className="w-8 h-8 rounded-lg hidden dark:block" width={32} height={32} />
                 </span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">Sprintro</span>
+                <span className="font-semibold text-slate-900 dark:text-white">Sprintro</span>
               </div>
               
               <div className="flex items-center gap-6 text-sm">
-                <Link href="/blog" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                <Link href="/blog" className="text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white transition-colors">
                   Blog
                 </Link>
-                <Link href="/faq" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                <Link href="/faq" className="text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white transition-colors">
                   FAQ
                 </Link>
-                <Link href="/analytics" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                <Link href="/analytics" className="text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white transition-colors">
                   Analytics
                 </Link>
-                <Link href="/legal" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                <Link href="/legal" className="text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white transition-colors">
                   Legal
                 </Link>
               </div>

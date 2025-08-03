@@ -57,7 +57,7 @@ export default function VotingCards({
                 className={`aspect-[2/3] rounded-lg shadow transition-transform hover:scale-105 border ${
                   selectedCard === value
                     ? 'bg-blue-500 text-white border-blue-600 dark:bg-blue-600 dark:border-blue-500'
-                    : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700'
+                    : 'bg-white dark:bg-[#212121] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] text-gray-900 dark:text-white border-gray-200 dark:border-[#404040]'
                 }`}
                 title={room.showTooltips ? tooltips[value] : undefined}
               >

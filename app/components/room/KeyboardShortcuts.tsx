@@ -97,7 +97,7 @@ export default function KeyboardShortcuts({
       >
         {/* Help Panel */}
         <div 
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700"
+          className="bg-white dark:bg-[#212121] rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-[#404040]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -114,7 +114,7 @@ export default function KeyboardShortcuts({
             </div>
             <button
               onClick={() => setShowHelp(false)}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-[#aaaaaa] rounded-lg hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -135,10 +135,10 @@ export default function KeyboardShortcuts({
                     const keyLabel = index === 9 ? '0' : (index + 1).toString();
                     return (
                       <div key={value} className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">
-                          Vote <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded text-xs">{value}</span>
+                        <span className="text-gray-600 dark:text-[#aaaaaa]">
+                          Vote <span className="font-mono bg-gray-100 dark:bg-[#2a2a2a] px-1 rounded text-xs">{value}</span>
                         </span>
-                        <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
+                        <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-white bg-gray-100 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#404040] rounded">
                           {keyLabel}
                         </kbd>
                       </div>
@@ -150,25 +150,25 @@ export default function KeyboardShortcuts({
 
             {/* General Shortcuts */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 pb-1">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-[#aaaaaa] border-b border-gray-200 dark:border-[#404040] pb-1">
                 General
               </h4>
               <div className="space-y-1">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Toggle spectator mode</span>
-                  <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
+                  <span className="text-gray-600 dark:text-[#aaaaaa]">Toggle spectator mode</span>
+                  <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-white bg-gray-100 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#404040] rounded">
                     S
                   </kbd>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Show/hide this help</span>
-                  <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
+                  <span className="text-gray-600 dark:text-[#aaaaaa]">Show/hide this help</span>
+                  <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-white bg-gray-100 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#404040] rounded">
                     H
                   </kbd>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Close dialogs</span>
-                  <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
+                  <span className="text-gray-600 dark:text-[#aaaaaa]">Close dialogs</span>
+                  <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-white bg-gray-100 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#404040] rounded">
                     Esc
                   </kbd>
                 </div>
@@ -178,19 +178,19 @@ export default function KeyboardShortcuts({
             {/* Admin Shortcuts */}
             {isAdmin && (
               <div className="space-y-2">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 pb-1">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-[#aaaaaa] border-b border-gray-200 dark:border-[#404040] pb-1">
                   Admin Only
                 </h4>
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Reveal votes</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
+                    <span className="text-gray-600 dark:text-[#aaaaaa]">Reveal votes</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-white bg-gray-100 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#404040] rounded">
                       R
                     </kbd>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Start new round</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
+                    <span className="text-gray-600 dark:text-[#aaaaaa]">Start new round</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-white bg-gray-100 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#404040] rounded">
                       N
                     </kbd>
                   </div>
@@ -200,9 +200,9 @@ export default function KeyboardShortcuts({
           </div>
 
           {/* Footer */}
-          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-              Press <kbd className="px-1 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">H</kbd> anytime to toggle this help
+          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-[#404040]">
+            <p className="text-xs text-gray-500 dark:text-[#aaaaaa] text-center">
+              Press <kbd className="px-1 py-0.5 text-xs bg-gray-100 dark:bg-[#2a2a2a] rounded">H</kbd> anytime to toggle this help
             </p>
           </div>
         </div>

@@ -67,7 +67,7 @@ export default function AdminPanel({
   if (!isAdmin) return null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-[#212121] rounded-lg shadow border border-gray-200 dark:border-[#404040]">
       {/* Header with toggle */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
@@ -99,7 +99,7 @@ export default function AdminPanel({
             <select 
               value={room.scaleType || 'fibonacci'} 
               onChange={(e) => changeScale(e.target.value as ScaleType)}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+              className="w-full p-2 border border-gray-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
               disabled={!room.votesRevealed}
             >
               {Object.values(ESTIMATION_SCALES).map((scale) => (
@@ -116,15 +116,15 @@ export default function AdminPanel({
           </div>
 
           {/* Auto-Reveal Setting */}
-          <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+          <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-[#2a2a2a] rounded">
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Auto-reveal votes</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Auto-show when everyone votes</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">Auto-reveal votes</div>
+              <div className="text-xs text-gray-500 dark:text-[#aaaaaa]">Auto-show when everyone votes</div>
             </div>
             <button
               onClick={toggleAutoReveal}
               className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                room.autoReveal ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                room.autoReveal ? 'bg-blue-600' : 'bg-gray-200 dark:bg-[#404040]'
               }`}
               role="switch"
               aria-checked={room.autoReveal}
@@ -139,15 +139,15 @@ export default function AdminPanel({
           </div>
           
           {/* Anonymous Voting Setting */}
-          <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+          <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-[#2a2a2a] rounded">
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Anonymous voting</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Hide names during voting</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">Anonymous voting</div>
+              <div className="text-xs text-gray-500 dark:text-[#aaaaaa]">Hide names during voting</div>
             </div>
             <button
               onClick={toggleAnonymousVoting}
               className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                room.anonymousVoting ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                room.anonymousVoting ? 'bg-blue-600' : 'bg-gray-200 dark:bg-[#404040]'
               }`}
               role="switch"
               aria-checked={room.anonymousVoting}
@@ -162,15 +162,15 @@ export default function AdminPanel({
           </div>
 
           {/* Card Tooltips Setting */}
-          <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+          <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-[#2a2a2a] rounded">
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Card tooltips</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Show card descriptions</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">Card tooltips</div>
+              <div className="text-xs text-gray-500 dark:text-[#aaaaaa]">Show card descriptions</div>
             </div>
             <button
               onClick={toggleTooltips}
               className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                room.showTooltips ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                room.showTooltips ? 'bg-blue-600' : 'bg-gray-200 dark:bg-[#404040]'
               }`}
               role="switch"
               aria-checked={room.showTooltips}
@@ -185,15 +185,15 @@ export default function AdminPanel({
           </div>
 
           {/* Confetti Celebrations Setting */}
-          <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+          <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-[#2a2a2a] rounded">
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Confetti celebrations</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Show confetti on reveal</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">Confetti celebrations</div>
+              <div className="text-xs text-gray-500 dark:text-[#aaaaaa]">Show confetti on reveal</div>
             </div>
             <button
               onClick={toggleConfetti}
               className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                room.confettiEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                room.confettiEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-[#404040]'
               }`}
               role="switch"
               aria-checked={room.confettiEnabled}

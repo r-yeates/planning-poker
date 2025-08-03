@@ -36,7 +36,7 @@ export default function ParticipantCard({
     if (hasVoted && !votesRevealed && participant.role !== 'spectator') {
       return 'border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-900/20';
     }
-    return 'border-gray-200 dark:border-gray-700';
+    return 'border-gray-200 dark:border-[#404040]';
   };
   
   const getVoteStatusText = () => {
@@ -72,10 +72,10 @@ export default function ParticipantCard({
     return null;
   };
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg border p-3 transition-all hover:shadow-md group ${getBorderColor()}`}>
+    <div className={`bg-white dark:bg-[#212121] rounded-lg border p-3 transition-all hover:shadow-md group ${getBorderColor()}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <div className="text-base font-bold text-gray-900 dark:text-gray-100">
+          <div className="text-base font-bold text-gray-900 dark:text-white">
             {anonymousVoting && !votesRevealed 
               ? 'Anonymous' 
               : participant.name

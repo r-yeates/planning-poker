@@ -261,7 +261,7 @@ export default function VotingTimer({ room, roomId, isAdmin, compact = false }: 
 
           {/* Timer Controls Dropdown - Only show for admins */}
           {isAdmin && showControls && (
-            <div className="absolute top-12 right-0 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-[200px]">
+            <div className="absolute top-12 right-0 z-50 bg-white dark:bg-[#212121] border border-gray-200 dark:border-[#404040] rounded-lg shadow-lg p-3 min-w-[200px]">
               <div className="space-y-2">
                 <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Timer Controls</div>
                 
@@ -298,7 +298,7 @@ export default function VotingTimer({ room, roomId, isAdmin, compact = false }: 
                 
                 <button
                   onClick={() => setShowControls(false)}
-                  className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors"
+                  className="w-full px-3 py-2 bg-gray-100 dark:bg-[#2a2a2a] hover:bg-gray-200 dark:hover:bg-[#404040] text-gray-700 dark:text-[#aaaaaa] text-sm rounded transition-colors"
                 >
                   Close
                 </button>
@@ -316,7 +316,7 @@ export default function VotingTimer({ room, roomId, isAdmin, compact = false }: 
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setShowControls(!showControls)}
-          className="flex items-center gap-2 px-3 py-2 h-10 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          className="flex items-center gap-2 px-3 py-2 h-10 rounded-lg border bg-white dark:bg-[#212121] border-gray-200 dark:border-[#404040] text-gray-600 dark:text-[#aaaaaa] hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors"
           title="Start Timer"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -327,7 +327,7 @@ export default function VotingTimer({ room, roomId, isAdmin, compact = false }: 
 
         {/* Timer Setup Dropdown */}
         {showControls && (
-          <div className="absolute top-12 right-0 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 min-w-[220px]">
+          <div className="absolute top-12 right-0 z-50 bg-white dark:bg-[#212121] border border-gray-200 dark:border-[#404040] rounded-lg shadow-lg p-4 min-w-[220px]">
             <div className="space-y-3">
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Start Voting Timer</div>
               
@@ -339,7 +339,7 @@ export default function VotingTimer({ room, roomId, isAdmin, compact = false }: 
                   onChange={(e) => setTimeInput(e.target.value)}
                   min="1"
                   max="60"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="5"
                 />
               </div>
@@ -347,19 +347,19 @@ export default function VotingTimer({ room, roomId, isAdmin, compact = false }: 
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setTimeInput('2')}
-                  className="px-2 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded transition-colors"
+                  className="px-2 py-1 bg-gray-100 dark:bg-[#2a2a2a] hover:bg-gray-200 dark:hover:bg-[#404040] text-gray-700 dark:text-[#aaaaaa] text-xs rounded transition-colors"
                 >
                   2m
                 </button>
                 <button
                   onClick={() => setTimeInput('5')}
-                  className="px-2 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded transition-colors"
+                  className="px-2 py-1 bg-gray-100 dark:bg-[#2a2a2a] hover:bg-gray-200 dark:hover:bg-[#404040] text-gray-700 dark:text-[#aaaaaa] text-xs rounded transition-colors"
                 >
                   5m
                 </button>
                 <button
                   onClick={() => setTimeInput('10')}
-                  className="px-2 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded transition-colors"
+                  className="px-2 py-1 bg-gray-100 dark:bg-[#2a2a2a] hover:bg-gray-200 dark:hover:bg-[#404040] text-gray-700 dark:text-[#aaaaaa] text-xs rounded transition-colors"
                 >
                   10m
                 </button>
@@ -380,7 +380,7 @@ export default function VotingTimer({ room, roomId, isAdmin, compact = false }: 
                 </button>
                 <button
                   onClick={() => setShowControls(false)}
-                  className="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded transition-colors"
+                  className="px-3 py-2 bg-gray-100 dark:bg-[#2a2a2a] hover:bg-gray-200 dark:hover:bg-[#404040] text-gray-700 dark:text-[#aaaaaa] text-sm rounded transition-colors"
                 >
                   Cancel
                 </button>
