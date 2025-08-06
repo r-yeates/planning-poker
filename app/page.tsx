@@ -33,6 +33,9 @@ export default function HomePage() {
   const [error, setError] = useState('');
   const [isNavVisible, setIsNavVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [particles, setParticles] = useState<Array<{id: number, x: number, y: number, size: number, delay: number}>>([]);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const router = useRouter();
 
   // Text transition states (only for hero)
@@ -87,6 +90,40 @@ export default function HomePage() {
     }, 3500); // Change every 3.5 seconds
     return () => clearInterval(interval);
   }, [heroTexts.length]);
+
+  // Set loading to false immediately since we don't have actual async loading
+  useEffect(() => {
+    setIsLoading(false);
+  }, []);
+
+  // Initialize particle system
+  useEffect(() => {
+    const generateParticles = () => {
+      const newParticles = [];
+      for (let i = 0; i < 15; i++) {
+        newParticles.push({
+          id: i,
+          x: Math.random() * 100,
+          y: Math.random() * 100,
+          size: Math.random() * 4 + 2,
+          delay: Math.random() * 8
+        });
+      }
+      setParticles(newParticles);
+    };
+
+    generateParticles();
+  }, []);
+
+  // Mouse tracking for particle interaction
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   // Navigation scroll behavior
   useEffect(() => {
@@ -308,18 +345,247 @@ export default function HomePage() {
     }
   }), []);
 
+  // Skeleton Loading Component
+  const SkeletonLoader = () => (
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0f0f0f]">
+      {/* Navigation Skeleton */}
+      <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 max-w-7xl w-full mx-auto px-6">
+        <div className="bg-white/70 dark:bg-[#212121]/70 backdrop-blur-xl border border-slate-300/80 dark:border-[#303030]/50 rounded-2xl px-8 py-4 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 skeleton rounded-lg"></div>
+              <div className="w-24 h-6 skeleton rounded"></div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-12 h-8 skeleton rounded-lg"></div>
+              <div className="w-12 h-8 skeleton rounded-lg"></div>
+              <div className="w-16 h-8 skeleton rounded-lg"></div>
+              <div className="w-8 h-8 skeleton rounded-lg ml-3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Hero Section Skeleton */}
+      <section className="relative bg-gradient-to-br from-slate-50 via-white to-slate-100/30 dark:from-[#0f0f0f] dark:via-[#181818] dark:to-[#212121] overflow-hidden">
+        <div className="relative z-10 max-w-7xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[65vh]">
+            {/* Left Column Skeleton */}
+            <div className="space-y-8 text-center lg:text-left">
+              <div className="space-y-6">
+                <div className="w-96 h-16 skeleton rounded-xl mx-auto lg:mx-0"></div>
+                <div className="w-80 h-6 skeleton rounded mx-auto lg:mx-0"></div>
+              </div>
+              <div className="w-72 h-6 skeleton rounded mx-auto lg:mx-0"></div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <div className="w-48 h-14 skeleton rounded-xl"></div>
+                <div className="w-40 h-14 skeleton rounded-xl"></div>
+              </div>
+            </div>
+
+            {/* Right Column Skeleton */}
+            <div className="relative">
+              <div className="bg-white/60 dark:bg-[#212121]/80 backdrop-blur-sm border border-slate-200/50 dark:border-[#303030] rounded-3xl p-8 shadow-2xl">
+                <div className="space-y-4">
+                  <div className="w-full h-8 skeleton rounded"></div>
+                  <div className="grid grid-cols-5 gap-2">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="aspect-square skeleton rounded-lg"></div>
+                    ))}
+                  </div>
+                  <div className="w-full h-12 skeleton rounded-lg"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Templates Section Skeleton */}
+      <section className="py-24 bg-white dark:bg-[#181818]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="w-64 h-12 skeleton rounded mx-auto mb-4"></div>
+            <div className="w-96 h-6 skeleton rounded mx-auto"></div>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-8 mb-20">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white dark:bg-[#212121] p-8 rounded-2xl border border-slate-200 dark:border-[#303030] shadow-sm">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-14 h-14 skeleton rounded-xl"></div>
+                  <div className="w-32 h-6 skeleton rounded"></div>
+                </div>
+                <div className="space-y-3 mb-6">
+                  <div className="w-full h-4 skeleton rounded"></div>
+                  <div className="w-3/4 h-4 skeleton rounded"></div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <div className="w-24 h-6 skeleton rounded-full"></div>
+                  <div className="w-20 h-6 skeleton rounded-full"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+
   return (
     <>
-      {/* Structured Data for SEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />      <div className="min-h-screen bg-slate-50 dark:bg-[#0f0f0f]">
+      {/* Show skeleton loading initially */}
+      {isLoading ? (
+        <SkeletonLoader />
+      ) : (
+        <>
+          {/* Structured Data for SEO */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          />
+      
+      {/* Custom CSS Animations */}
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes slideInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        
+        @keyframes pulseSubtle {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
+        }
+        
+        .animate-fade-in-up {
+          animation: fadeInUp 0.8s ease-out forwards;
+          opacity: 0;
+        }
+        
+        .animate-fade-in {
+          animation: fadeIn 0.8s ease-out forwards;
+          opacity: 0;
+        }
+        
+        .animate-slide-in-left {
+          animation: slideInLeft 0.8s ease-out forwards;
+          opacity: 0;
+        }
+        
+        .animate-slide-in-right {
+          animation: slideInRight 0.8s ease-out forwards;
+          opacity: 0;
+        }
+        
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+        
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 3s ease infinite;
+        }
+        
+        .animate-pulse-subtle {
+          animation: pulseSubtle 3s ease-in-out infinite;
+        }
+        
+        /* Skeleton Loading Styles */
+        .skeleton {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+          background-size: 200% 100%;
+          animation: skeleton-loading 1.5s infinite;
+        }
+        
+        .dark .skeleton {
+          background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+          background-size: 200% 100%;
+        }
+        
+        @keyframes skeleton-loading {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        
+        /* Particle System Styles */
+        .particle {
+          position: absolute;
+          pointer-events: none;
+          opacity: 0.6;
+          background: radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, rgba(139, 92, 246, 0.4) 100%);
+          border-radius: 50%;
+          transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+        
+        .dark .particle {
+          background: radial-gradient(circle, rgba(96, 165, 250, 0.6) 0%, rgba(167, 139, 250, 0.3) 100%);
+        }
+        
+        @keyframes particleFloat {
+          0%, 100% { 
+            transform: translateY(0px) translateX(0px) scale(1);
+            opacity: 0.6;
+          }
+          50% { 
+            transform: translateY(-20px) translateX(10px) scale(1.1);
+            opacity: 0.8;
+          }
+        }
+        
+        .particle-animated {
+          animation: particleFloat 8s ease-in-out infinite;
+        }
+      `}</style>
+      
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0f0f0f]">
         {/* Floating Navigation Bar */}
-        <nav className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 max-w-6xl w-full mx-auto px-6 transition-all duration-300 ${
+        <nav className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 max-w-7xl w-full mx-auto px-6 transition-all duration-300 ${
           isNavVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
         }`}>
-          <div className="bg-white/80 dark:bg-[#212121]/95 backdrop-blur-md border border-white/20 dark:border-[#303030] rounded-2xl px-8 py-4 shadow-xl">
+          <div className="bg-white/70 dark:bg-[#212121]/70 backdrop-blur-xl border border-slate-300/80 dark:border-[#303030]/50 rounded-2xl px-8 py-4 shadow-2xl shadow-black/5 dark:shadow-black/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {/* Logo for nav bar */}
@@ -358,34 +624,61 @@ export default function HomePage() {
         </nav>
 
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-br from-slate-50 via-white to-slate-100/30 dark:from-[#0f0f0f] dark:via-[#181818] dark:to-[#212121] overflow-hidden pt-20">
-          <div className="absolute inset-0">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#22272b_1px,transparent_1px),linear-gradient(to_bottom,#22272b_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#303030_1px,transparent_1px),linear-gradient(to_bottom,#303030_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)] opacity-40"></div>
+        <section className="relative bg-gradient-to-br from-slate-50 via-white to-slate-100/30 dark:from-[#0f0f0f] dark:via-[#181818] dark:to-[#212121] overflow-hidden">
+          {/* Particle System */}
+          <div className="absolute inset-0 z-0 overflow-hidden">
+            {particles.map((particle) => (
+              <div
+                key={particle.id}
+                className="particle particle-animated"
+                style={{
+                  left: `${particle.x}%`,
+                  top: `${particle.y}%`,
+                  width: `${particle.size}px`,
+                  height: `${particle.size}px`,
+                  animationDelay: `${particle.delay}s`,
+                  transform: `translate(${(mousePosition.x - window.innerWidth / 2) * 0.02}px, ${(mousePosition.y - window.innerHeight / 2) * 0.02}px)`
+                }}
+              />
+            ))}
+          </div>
+
+          <div className="absolute inset-0 z-1">
+            {/* Animated Grid Background */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#22272b_1px,transparent_1px),linear-gradient(to_bottom,#22272b_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#303030_1px,transparent_1px),linear-gradient(to_bottom,#303030_1px,transparent_1px)] bg-[size:4rem_4rem] bg-[position:1.5rem_0] [mask-image:radial-gradient(ellipse_80%_60%_at_30%_40%,#000_50%,transparent_80%)] opacity-40 animate-pulse"></div>
           </div>
           
-          <div className="relative max-w-7xl mx-auto px-6">
-            <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[85vh]">
+          <div className="relative z-10 max-w-7xl mx-auto px-6">
+            <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[65vh]">
               {/* Left Column - Title and Buttons */}
-              <div className="space-y-8 text-center lg:text-left">
-                <h1 className="text-4xl lg:text-6xl xl:text-7xl font-bold text-slate-900 dark:text-[#f1f1f1] leading-tight">
-                  <span className="bg-gradient-to-r from-[#3b82f6] via-[#8b5cf6] to-[#06b6d4] bg-clip-text text-transparent dark:from-[#60a5fa] dark:via-[#a78bfa] dark:to-[#22d3ee]">Planning Poker</span>
-                </h1>
-                <div className="text-lg lg:text-xl text-slate-600 dark:text-[#aaaaaa] h-12 flex items-center justify-center lg:justify-start">
+              <div className="space-y-8 text-center lg:text-left relative z-20 animate-fade-in-up">
+                <div className="space-y-6 animate-slide-in-left">
+                  <h1 className="text-4xl lg:text-6xl xl:text-7xl font-black text-slate-900 dark:text-[#f1f1f1] leading-tight tracking-tight">
+                    Agile Estimation
+                    <br />
+                    <span className="bg-gradient-to-r from-[#3b82f6] via-[#8b5cf6] to-[#06b6d4] bg-clip-text text-transparent dark:from-[#60a5fa] dark:via-[#a78bfa] dark:to-[#22d3ee] animate-gradient">
+                      Made Simple
+                    </span>
+                  </h1>
+                  
+                  <p className="text-xl lg:text-2xl text-slate-600 dark:text-[#aaaaaa] font-medium leading-relaxed max-w-2xl mx-auto lg:mx-0 animate-fade-in" style={{animationDelay: '0.2s'}}>
+                    Skip the endless debates. Get accurate story points in minutes, not hours.
+                  </p>
+                </div>
+                
+                <div className="text-lg lg:text-xl text-slate-600 dark:text-[#aaaaaa] h-12 flex items-center justify-center lg:justify-start animate-fade-in" style={{animationDelay: '0.4s'}}>
                   <CustomTextTransition className="font-medium">
                     {heroTexts[heroTextIndex]}
                   </CustomTextTransition>
                 </div>
 
                 {/* Quick Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-in-up" style={{animationDelay: '0.6s'}}>
                   <button
                     onClick={() => createRoomWithTemplate('sprint-planning')}
                     disabled={isCreating || isJoining}
-                    className="inline-flex items-center gap-3 bg-[#3b82f6] hover:bg-[#2563eb] text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-3 bg-[#3b82f6] hover:bg-[#2563eb] text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse-subtle"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
                     Start Planning Session
                   </button>
                   <button
@@ -406,8 +699,8 @@ export default function HomePage() {
               </div>
 
               {/* Right Column - Demo Cards */}
-              <div className="relative">
-                <div className="bg-white/60 dark:bg-[#212121]/80 backdrop-blur-sm border border-slate-200/50 dark:border-[#303030] rounded-3xl p-8 shadow-2xl">
+              <div className="relative z-30 animate-fade-in-right">
+                <div className="bg-white/60 dark:bg-[#212121]/80 backdrop-blur-sm border border-slate-200/50 dark:border-[#303030] rounded-3xl p-8 shadow-2xl relative">
                   <PlanningPokerDemo />
                 </div>
               </div>
@@ -466,7 +759,7 @@ export default function HomePage() {
                   darkBorderColor: '[#404040]',
                   darkTextColor: '[#f1f1f1]'
                 }
-              ].map((template) => (
+              ].map((template, index) => (
                 <div key={template.id} className="group relative">
                   <button
                     onClick={() => createRoomWithTemplate(template.id)}
@@ -863,6 +1156,8 @@ export default function HomePage() {
           </div>
         </footer>
       </div>
+        </>
+      )}
     </>
   );
 }
