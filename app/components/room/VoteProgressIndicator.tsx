@@ -86,17 +86,17 @@ export default function VoteProgressIndicator({
       <div className={`flex items-center gap-2 ${className}`}>
         <div className="flex-1">
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-gray-600 dark:text-gray-400">
+            <span className="text-slate-600 dark:text-[#aaaaaa]">
               {room.votesRevealed ? 'Voting Results' : 'Voting Progress'}
             </span>
             <div className="flex items-center gap-3">
               {/* Round Timer */}
               {(isRoundActive || roundElapsedTime > 0) && (
                 <div className="flex items-center gap-1">
-                  <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 text-[#3b82f6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
-                  <span className="text-blue-600 dark:text-blue-400 font-mono text-xs">
+                  <span className="text-[#3b82f6] dark:text-[#3b82f6] font-mono text-xs">
                     {formatTime(roundElapsedTime)}
                   </span>
                 </div>
@@ -104,18 +104,18 @@ export default function VoteProgressIndicator({
               <span className={`font-bold ${
                 room.votesRevealed || allVotersHaveVoted 
                   ? 'text-green-600 dark:text-green-400' 
-                  : 'text-gray-600 dark:text-gray-400'
+                  : 'text-slate-600 dark:text-[#aaaaaa]'
               }`}>
                 {votedCount}/{voterCount}
               </span>
             </div>
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+          <div className="w-full bg-slate-200 dark:bg-[#404040] rounded-full h-1.5">
             <div 
               className={`h-1.5 rounded-full transition-all duration-500 ease-out ${
                 room.votesRevealed || allVotersHaveVoted 
                   ? 'bg-green-500 dark:bg-green-400' 
-                  : 'bg-blue-500 dark:bg-blue-400'
+                  : 'bg-[#3b82f6] dark:bg-[#3b82f6]'
               }`}
               style={{ width: `${progressPercentage}%` }}
               role="progressbar"
@@ -136,20 +136,20 @@ export default function VoteProgressIndicator({
   }
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4 ${className}`}>
+    <div className={`bg-white dark:bg-[#212121] rounded-lg shadow border border-slate-200 dark:border-[#404040] p-4 ${className}`}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">
           {room.votesRevealed ? 'Voting Results' : 'Voting Progress'}
         </h3>
         <div className="flex items-center gap-4">
           {/* Round Timer */}
           {(isRoundActive || roundElapsedTime > 0) && (
             <div className="flex items-center gap-1">
-              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-[#3b82f6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Round:</span>
-              <span className="text-sm font-mono font-semibold text-blue-600 dark:text-blue-400">
+              <span className="text-sm text-slate-600 dark:text-[#aaaaaa]">Round:</span>
+              <span className="text-sm font-mono font-semibold text-[#3b82f6] dark:text-[#3b82f6]">
                 {formatTime(roundElapsedTime)}
               </span>
             </div>
@@ -157,7 +157,7 @@ export default function VoteProgressIndicator({
           <div className={`text-sm font-bold transition-colors duration-200 ${
             room.votesRevealed || allVotersHaveVoted 
               ? 'text-green-600 dark:text-green-400' 
-              : 'text-gray-600 dark:text-gray-400'
+              : 'text-slate-600 dark:text-[#aaaaaa]'
           }`}>
             {votedCount}/{voterCount}
           </div>
@@ -166,12 +166,12 @@ export default function VoteProgressIndicator({
       
       {/* Progress Bar */}
       <div className="mb-3">
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <div className="w-full bg-slate-200 dark:bg-[#404040] rounded-full h-2">
           <div 
             className={`h-2 rounded-full transition-all duration-500 ease-out ${
               room.votesRevealed || allVotersHaveVoted 
                 ? 'bg-green-500 dark:bg-green-400' 
-                : 'bg-blue-500 dark:bg-blue-400'
+                : 'bg-[#3b82f6] dark:bg-[#3b82f6]'
             }`}
             style={{ width: `${progressPercentage}%` }}
             role="progressbar"
@@ -206,10 +206,10 @@ export default function VoteProgressIndicator({
             </>
           ) : (
             <>
-              <svg className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-[#3b82f6] dark:text-[#3b82f6] animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-sm text-slate-600 dark:text-[#aaaaaa]">
                 Waiting for {voterCount - votedCount} more vote{voterCount - votedCount === 1 ? '' : 's'}
               </span>
             </>

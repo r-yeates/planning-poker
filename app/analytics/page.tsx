@@ -45,9 +45,9 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0f0f0f] flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Loading Analytics...</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-[#f1f1f1] mb-2">Loading Analytics...</h1>
         </div>
       </div>
     );
@@ -55,29 +55,29 @@ export default function AnalyticsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0f0f0f] flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-2">Error</h1>
-          <p className="text-gray-600 dark:text-gray-400">{error}</p>
+          <p className="text-slate-600 dark:text-[#aaaaaa]">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0f0f0f] p-8">
       <div className="max-w-6xl mx-auto">        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">📊 Analytics Dashboard</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">Planning Poker usage statistics</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-[#f1f1f1]">📊 Analytics Dashboard</h1>
+            <p className="text-slate-600 dark:text-[#aaaaaa] mt-2">Planning Poker usage statistics</p>
           </div>
           <div className="flex items-center gap-4">
             
             <ThemeToggle />
             <Link
               href="/"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white rounded-lg transition-colors shadow-md hover:shadow-lg"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -89,7 +89,7 @@ export default function AnalyticsPage() {
 
         {/* Global Statistics */}
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">📈 All-Time Statistics</h2>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-[#f1f1f1] mb-4">📈 All-Time Statistics</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
               title="Total Rooms Created"
@@ -132,7 +132,7 @@ export default function AnalyticsPage() {
 
         {/* Today's Statistics */}
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">📅 Today&apos;s Activity</h2>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-[#f1f1f1] mb-4">📅 Today&apos;s Activity</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
               title="Rooms Created"
@@ -163,7 +163,7 @@ export default function AnalyticsPage() {
 
         {/* Last Updated */}
         {globalStats?.lastUpdated && (
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+          <div className="text-center text-sm text-slate-500 dark:text-[#888888]">
             Last updated: {new Date(globalStats.lastUpdated).toLocaleString()}
           </div>
         )}
@@ -181,16 +181,16 @@ interface StatCardProps {
 
 function StatCard({ title, value, icon, color }: StatCardProps) {
   const colorClasses = {
-    blue: 'from-blue-500 to-blue-600',
-    green: 'from-green-500 to-green-600',
-    purple: 'from-purple-500 to-purple-600',
-    orange: 'from-orange-500 to-orange-600',
+    blue: 'from-[#3b82f6] to-[#2563eb]',
+    green: 'from-emerald-500 to-emerald-600',
+    purple: 'from-[#8b5cf6] to-[#7c3aed]',
+    orange: 'from-amber-500 to-orange-600',
     indigo: 'from-indigo-500 to-indigo-600',
     pink: 'from-pink-500 to-pink-600',
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="bg-white dark:bg-[#212121] rounded-xl shadow-lg border border-slate-200 dark:border-[#303030] overflow-hidden hover:shadow-xl transition-all duration-200">
       <div className={`bg-gradient-to-r ${colorClasses[color]} px-6 py-4`}>
         <div className="flex items-center justify-between">
           <div className="text-2xl">{icon}</div>
@@ -200,7 +200,7 @@ function StatCard({ title, value, icon, color }: StatCardProps) {
         </div>
       </div>
       <div className="px-6 py-4">
-        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</h3>
+        <h3 className="text-sm font-medium text-slate-600 dark:text-[#aaaaaa]">{title}</h3>
       </div>
     </div>
   );

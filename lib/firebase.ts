@@ -52,6 +52,8 @@ export interface Participant {
   name: string;
   isHost: boolean;
   role: 'voter' | 'spectator' | 'admin';
+  lastActivity?: Date; // Track when participant was last active
+  status?: 'active' | 'idle' | 'disconnected'; // Current activity status
 }
 
 export interface Vote {
@@ -96,6 +98,7 @@ export interface Room {
   roundHistory: RoundResult[];
   scaleType: ScaleType;
   isTicketQueueCollapsed?: boolean;
+  isLocked?: boolean; // Prevent new participants from joining
 }
 
 // Function to get room by code

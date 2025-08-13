@@ -1,0 +1,38 @@
+Planning Poker Room Feature Ideas
+=================================
+
+UX & UI Improvements
+--------------------
+5. Room Settings Modal: Consider moving room settings to a modal for better focus and less clutter.
+6. Accessibility: Add ARIA labels and keyboard navigation for all interactive elements.
+
+Features
+--------
+1. Chat/Comments: Add a simple chat or comment section for participants to discuss tickets.
+2. Ticket Details: Allow ticket descriptions, links, or attachments for more context.
+3. Voting History: Show previous rounds and votes for reference.
+4. Export Results: Add an option to export voting results (CSV, PDF, etc.).
+5. Invite Link: Generate a short invite link or QR code for easier sharing.
+6. Custom Scales: Allow admins to define custom estimation scales.
+
+Admin Controls
+--------------
+1. Lock Room: Option to lock the room to prevent new participants after voting starts.
+2. Remove Votes: Allow admin to clear individual votes (not just reset all).
+3. Participant Management: Add ability to mute or temporarily restrict participants.
+
+Technical/Performance
+---------------------
+1. Optimistic UI: Show immediate feedback for actions (e.g., voting, joining) before Firestore confirms.
+2. Error Handling: More granular error messages and retry options for network issues.
+3. Loading States: Add skeleton loaders for participants and tickets.
+
+Analytics & Insights
+--------------------
+1. Voting Statistics: Show more detailed stats (median, mode, vote distribution).
+2. Consensus Insights: Suggest next steps based on consensus (e.g., "Ready to estimate", "Needs more discussion").
+
+Miscellaneous
+-------------
+2. Help/FAQ: Add a help button or tooltip for new users.
+3. Mobile Responsiveness: Ensure all controls are easily usable on mobile devices.

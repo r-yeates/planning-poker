@@ -123,8 +123,8 @@ export default function AdminPanel({
             </div>
             <button
               onClick={toggleAutoReveal}
-              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                room.autoReveal ? 'bg-blue-600' : 'bg-gray-200 dark:bg-[#404040]'
+              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-1 ${
+                room.autoReveal ? 'bg-[#3b82f6]' : 'bg-slate-200 dark:bg-[#404040]'
               }`}
               role="switch"
               aria-checked={room.autoReveal}
@@ -146,8 +146,8 @@ export default function AdminPanel({
             </div>
             <button
               onClick={toggleAnonymousVoting}
-              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                room.anonymousVoting ? 'bg-blue-600' : 'bg-gray-200 dark:bg-[#404040]'
+              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-1 ${
+                room.anonymousVoting ? 'bg-[#3b82f6]' : 'bg-slate-200 dark:bg-[#404040]'
               }`}
               role="switch"
               aria-checked={room.anonymousVoting}
@@ -169,8 +169,8 @@ export default function AdminPanel({
             </div>
             <button
               onClick={toggleTooltips}
-              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                room.showTooltips ? 'bg-blue-600' : 'bg-gray-200 dark:bg-[#404040]'
+              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-1 ${
+                room.showTooltips ? 'bg-[#3b82f6]' : 'bg-slate-200 dark:bg-[#404040]'
               }`}
               role="switch"
               aria-checked={room.showTooltips}
@@ -192,8 +192,8 @@ export default function AdminPanel({
             </div>
             <button
               onClick={toggleConfetti}
-              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                room.confettiEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-[#404040]'
+              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-1 ${
+                room.confettiEnabled ? 'bg-[#3b82f6]' : 'bg-slate-200 dark:bg-[#404040]'
               }`}
               role="switch"
               aria-checked={room.confettiEnabled}

@@ -582,40 +582,40 @@ export default function HomePage() {
       
       <div className="min-h-screen bg-slate-50 dark:bg-[#0f0f0f]">
         {/* Floating Navigation Bar */}
-        <nav className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 max-w-7xl w-full mx-auto px-6 transition-all duration-300 ${
+        <nav className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 max-w-7xl w-full mx-auto px-3 md:px-6 transition-all duration-300 ${
           isNavVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
         }`}>
-          <div className="bg-white/70 dark:bg-[#212121]/70 backdrop-blur-xl border border-slate-300/80 dark:border-[#303030]/50 rounded-2xl px-8 py-4 shadow-2xl shadow-black/5 dark:shadow-black/20">
+          <div className="bg-white/70 dark:bg-[#212121]/70 backdrop-blur-xl border border-slate-300/80 dark:border-[#303030]/50 rounded-2xl px-4 md:px-8 py-3 md:py-4 shadow-2xl shadow-black/5 dark:shadow-black/20">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3">
                 {/* Logo for nav bar */}
-                <span className="relative w-10 h-10">
+                <span className="relative w-8 h-8 md:w-10 md:h-10">
                   <Image src="/logo-dark.png" alt="Sprintro Logo" width={40} height={40} className="rounded-lg shadow-sm block dark:hidden" />
                   <Image src="/logo.png" alt="Sprintro Logo" width={40} height={40} className="rounded-lg shadow-sm hidden dark:block" />
                 </span>
-                <span className="font-semibold text-xl text-slate-900 dark:text-white">Sprintro</span>
+                <span className="font-semibold text-lg md:text-xl text-slate-900 dark:text-white">Sprintro</span>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 md:gap-2">
                 <Link
                   href="/blog"
-                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-[#303030] rounded-lg transition-all duration-200"
+                  className="hidden sm:block px-3 md:px-4 py-2 text-sm font-medium text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-[#303030] rounded-lg transition-all duration-200"
                 >
                   Blog
                 </Link>
                 <Link
                   href="/faq"
-                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-[#303030] rounded-lg transition-all duration-200"
+                  className="hidden sm:block px-3 md:px-4 py-2 text-sm font-medium text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-[#303030] rounded-lg transition-all duration-200"
                 >
                   FAQ
                 </Link>
                 <Link
                   href="/analytics"
-                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-[#303030] rounded-lg transition-all duration-200"
+                  className="hidden md:block px-4 py-2 text-sm font-medium text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-[#303030] rounded-lg transition-all duration-200"
                 >
                   Analytics
                 </Link>
-                <div className="ml-3">
+                <div className="ml-1 md:ml-3">
                   <ThemeToggle />
                 </div>
               </div>
@@ -624,7 +624,7 @@ export default function HomePage() {
         </nav>
 
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-br from-slate-50 via-white to-slate-100/30 dark:from-[#0f0f0f] dark:via-[#181818] dark:to-[#212121] overflow-hidden">
+        <section className="relative bg-gradient-to-br from-slate-50 via-white to-slate-100/30 dark:from-[#0f0f0f] dark:via-[#181818] dark:to-[#212121] overflow-hidden pt-24 md:pt-6">
           {/* Particle System */}
           <div className="absolute inset-0 z-0 overflow-hidden">
             {particles.map((particle) => (

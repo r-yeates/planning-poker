@@ -196,12 +196,12 @@ export default function TicketQueue({
   };
 
   return (
-    <div className="bg-white dark:bg-[#212121] rounded-lg shadow border border-gray-200 dark:border-[#404040]">
-      <div className={`p-4${!isCollapsed ? ' border-b border-gray-200 dark:border-gray-700' : ''}`}>        <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+    <div className="bg-white dark:bg-[#212121] rounded-lg shadow border border-slate-200 dark:border-[#404040]">
+      <div className={`p-4${!isCollapsed ? ' border-b border-slate-200 dark:border-[#404040]' : ''}`}>        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded transition-colors"
+              className="hover:bg-slate-100 dark:hover:bg-[#2a2a2a] p-1 rounded transition-colors"
             >
               <svg 
                 className={`w-4 h-4 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} 
@@ -227,13 +227,13 @@ export default function TicketQueue({
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search tickets..."
-                  className="w-full p-2 text-sm border border-gray-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-2 text-sm border border-slate-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-slate-900 dark:text-white focus:ring-1 focus:ring-[#3b82f6] focus:border-transparent"
                 />
               </div>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'title')}
-                className="p-2 text-sm border border-gray-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                className="p-2 text-sm border border-slate-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-slate-900 dark:text-white focus:ring-1 focus:ring-[#3b82f6] focus:border-transparent"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
@@ -241,7 +241,7 @@ export default function TicketQueue({
               </select>
             </div>
             {searchTerm && (
-              <div className="text-xs text-gray-500 dark:text-gray-400">
+              <div className="text-xs text-slate-500 dark:text-[#aaaaaa]">
                 Found {filteredAndSortedTickets.length} of {room.ticketQueue?.length || 0} tickets
               </div>
             )}
@@ -253,7 +253,7 @@ export default function TicketQueue({
           <div className="mt-3">
             <button
               onClick={() => setIsAddingTicket(true)}
-              className="w-full px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-2 text-sm bg-[#3b82f6] hover:bg-[#2563eb] text-white rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14m-7 7V5" />
@@ -268,28 +268,28 @@ export default function TicketQueue({
         <div className="p-4 space-y-3">
           {/* Add Ticket Form */}
           {isAddingTicket && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 p-4 rounded-lg space-y-3">
+            <div className="bg-blue-50 dark:bg-[#1e293b] border border-blue-200 dark:border-[#404040] p-4 rounded-lg space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Ticket Title *
                 </label>
                 <input
                   type="text"
                   value={newTicketTitle}
                   onChange={(e) => setNewTicketTitle(e.target.value)}
-                  className="w-full p-2 border border-gray-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full p-2 border border-slate-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-slate-900 dark:text-white focus:ring-1 focus:ring-[#3b82f6] focus:border-transparent text-sm"
                   placeholder="Enter ticket title..."
                   maxLength={100}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Description (optional)
                 </label>
                 <textarea
                   value={newTicketDescription}
                   onChange={(e) => setNewTicketDescription(e.target.value)}
-                  className="w-full p-2 border border-gray-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full p-2 border border-slate-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-slate-900 dark:text-white focus:ring-1 focus:ring-[#3b82f6] focus:border-transparent text-sm"
                   placeholder="Brief description of the ticket..."
                   rows={2}
                   maxLength={300}
@@ -299,7 +299,7 @@ export default function TicketQueue({
                 <button
                   onClick={addTicket}
                   disabled={!newTicketTitle.trim() || isSubmitting}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors text-sm"
+                  className="px-4 py-2 bg-[#3b82f6] hover:bg-[#2563eb] disabled:bg-slate-400 text-white rounded-lg transition-colors text-sm"
                 >
                   {isSubmitting ? 'Adding...' : 'Add Ticket'}
                 </button>
@@ -309,7 +309,7 @@ export default function TicketQueue({
                     setNewTicketTitle('');
                     setNewTicketDescription('');
                   }}
-                  className="px-4 py-2 bg-gray-200 dark:bg-[#2a2a2a] hover:bg-gray-300 dark:hover:bg-[#404040] text-gray-800 dark:text-[#aaaaaa] rounded-lg transition-colors text-sm"
+                  className="px-4 py-2 bg-slate-200 dark:bg-[#2a2a2a] hover:bg-slate-300 dark:hover:bg-[#404040] text-slate-800 dark:text-[#aaaaaa] rounded-lg transition-colors text-sm"
                 >
                   Cancel
                 </button>
@@ -335,16 +335,16 @@ export default function TicketQueue({
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`bg-gray-50 dark:bg-[#2a2a2a] p-3 rounded-lg border border-gray-200 dark:border-[#404040] hover:shadow-md transition-shadow${isCurrent ? ' ring-2 ring-blue-400 dark:ring-blue-600' : ''} ${snapshot.isDragging ? 'opacity-80' : ''}`}
+                                  className={`bg-slate-50 dark:bg-[#2a2a2a] p-3 rounded-lg border border-slate-200 dark:border-[#404040] hover:shadow-md transition-shadow${isCurrent ? ' ring-2 ring-[#3b82f6] dark:ring-[#3b82f6]' : ''} ${snapshot.isDragging ? 'opacity-80' : ''}`}
                                 >
                                   <div className="flex items-start justify-between">
                                     <div className="flex items-start gap-2 flex-1 min-w-0">
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                          <span className="text-xs bg-gray-200 dark:bg-[#404040] text-gray-700 dark:text-[#aaaaaa] px-2 py-1 rounded">
+                                          <span className="text-xs bg-slate-200 dark:bg-[#404040] text-slate-700 dark:text-[#aaaaaa] px-2 py-1 rounded">
                                             #{globalIndex}
                                           </span>
-                                          <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                                          <h4 className="font-medium text-slate-900 dark:text-slate-100 text-sm truncate">
                                             {ticket.title}
                                           </h4>
                                           {isCurrent && (
@@ -352,11 +352,11 @@ export default function TicketQueue({
                                           )}
                                         </div>
                                         {ticket.description && (
-                                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                                          <p className="text-xs text-slate-600 dark:text-[#aaaaaa] mb-2">
                                             {ticket.description}
                                           </p>
                                         )}
-                                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-[#aaaaaa]">
                                           <span>Added by {getParticipantName(ticket.addedBy)}</span>
                                           <span>•</span>
                                           <span>{new Date(ticket.addedAt).toLocaleDateString()}</span>
@@ -407,14 +407,14 @@ export default function TicketQueue({
                                           type="text"
                                           value={editTitle}
                                           onChange={e => setEditTitle(e.target.value)}
-                                          className="w-full p-2 border border-gray-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-gray-900 dark:text-white text-sm"
+                                          className="w-full p-2 border border-slate-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-slate-900 dark:text-white text-sm"
                                           maxLength={100}
                                           disabled={isEditSubmitting}
                                         />
                                         <textarea
                                           value={editDescription}
                                           onChange={e => setEditDescription(e.target.value)}
-                                          className="w-full p-2 border border-gray-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-gray-900 dark:text-white text-sm"
+                                          className="w-full p-2 border border-slate-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-slate-900 dark:text-white text-sm"
                                           rows={2}
                                           maxLength={300}
                                           disabled={isEditSubmitting}
@@ -423,14 +423,14 @@ export default function TicketQueue({
                                           <button
                                             onClick={saveEdit}
                                             disabled={!editTitle.trim() || isEditSubmitting}
-                                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:bg-gray-400 text-sm"
+                                            className="px-3 py-1 bg-[#3b82f6] hover:bg-[#2563eb] text-white rounded disabled:bg-slate-400 text-sm"
                                           >
                                             {isEditSubmitting ? 'Saving...' : 'Save'}
                                           </button>
                                           <button
                                             onClick={cancelEdit}
                                             disabled={isEditSubmitting}
-                                            className="px-3 py-1 bg-gray-200 dark:bg-[#2a2a2a] hover:bg-gray-300 dark:hover:bg-[#404040] text-gray-800 dark:text-[#aaaaaa] rounded text-sm"
+                                            className="px-3 py-1 bg-slate-200 dark:bg-[#2a2a2a] hover:bg-slate-300 dark:hover:bg-[#404040] text-slate-800 dark:text-[#aaaaaa] rounded text-sm"
                                           >
                                             Cancel
                                           </button>
@@ -457,16 +457,16 @@ export default function TicketQueue({
                   return (
                     <div
                       key={ticket.id}
-                      className={`bg-gray-50 dark:bg-[#2a2a2a] p-3 rounded-lg border border-gray-200 dark:border-[#404040] hover:shadow-md transition-shadow${isCurrent ? ' ring-2 ring-blue-400 dark:ring-blue-600' : ''}`}
+                      className={`bg-slate-50 dark:bg-[#2a2a2a] p-3 rounded-lg border border-slate-200 dark:border-[#404040] hover:shadow-md transition-shadow${isCurrent ? ' ring-2 ring-[#3b82f6] dark:ring-[#3b82f6]' : ''}`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-2 flex-1 min-w-0">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs bg-gray-200 dark:bg-[#404040] text-gray-700 dark:text-[#aaaaaa] px-2 py-1 rounded">
+                              <span className="text-xs bg-slate-200 dark:bg-[#404040] text-slate-700 dark:text-[#aaaaaa] px-2 py-1 rounded">
                                 #{globalIndex}
                               </span>
-                              <h4 className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                              <h4 className="font-medium text-slate-900 dark:text-white text-sm truncate">
                                 {ticket.title}
                               </h4>
                               {isCurrent && (
@@ -474,11 +474,11 @@ export default function TicketQueue({
                               )}
                             </div>
                             {ticket.description && (
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                              <p className="text-xs text-slate-600 dark:text-[#aaaaaa] mb-2">
                                 {ticket.description}
                               </p>
                             )}
-                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-[#aaaaaa]">
                               <span>Added by {getParticipantName(ticket.addedBy)}</span>
                               <span>•</span>
                               <span>{new Date(ticket.addedAt).toLocaleDateString()}</span>

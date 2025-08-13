@@ -42,6 +42,162 @@ export default function RoomPage() {
   const [isLeavingRoom, setIsLeavingRoom] = useState(false);
   const [isRoomSettingsCollapsed, setIsRoomSettingsCollapsed] = useState(true);
 
+  // Activity tracking
+  const updateParticipantActivity = useCallback(async () => {
+    if (!roomId || !userId || !hasJoined) return;
+    
+    try {
+      const docRef = doc(db, 'rooms', roomId);
+      await updateDoc(docRef, {
+        [`participants.${userId}.lastActivity`]: new Date(),
+        [`participants.${userId}.status`]: 'active'
+      });
+    } catch (error) {
+      console.error('Error updating participant activity:', error);
+    }
+  }, [roomId, userId, hasJoined]);
+
+  // Track user activity (mouse move, key press, clicks)
+  useEffect(() => {
+    if (!hasJoined) return;
+
+    const handleActivity = () => {
+      updateParticipantActivity();
+    };
+
+    // Update activity every 30 seconds while user is active
+    const activityInterval = setInterval(handleActivity, 30000);
+
+    // Listen for user activity events
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => {
+      document.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    // Initial activity update
+    handleActivity();
+
+    return () => {
+      clearInterval(activityInterval);
+      events.forEach(event => {
+        document.removeEventListener(event, handleActivity);
+      });
+    };
+  }, [hasJoined, updateParticipantActivity]);
+
+  // Update participant status based on activity (runs every minute)
+  useEffect(() => {
+    if (!room || !roomId || !hasJoined) return;
+
+    const updateStatuses = async () => {
+      const now = new Date();
+      const updates: Record<string, any> = {};
+      
+      Object.entries(room.participants).forEach(([id, participant]) => {
+        if (!participant.lastActivity) return;
+        
+        const lastActivity = new Date(participant.lastActivity);
+        const minutesSinceActivity = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60));
+        
+        let newStatus: 'active' | 'idle' | 'disconnected';
+        if (minutesSinceActivity < 2) newStatus = 'active';
+        else if (minutesSinceActivity < 10) newStatus = 'idle';
+        else newStatus = 'disconnected';
+        
+        if (participant.status !== newStatus) {
+          updates[`participants.${id}.status`] = newStatus;
+        }
+      });
+
+      if (Object.keys(updates).length > 0) {
+        try {
+          const docRef = doc(db, 'rooms', roomId);
+          await updateDoc(docRef, updates);
+        } catch (error) {
+          console.error('Error updating participant statuses:', error);
+        }
+      }
+    };
+
+    const statusInterval = setInterval(updateStatuses, 60000); // Check every minute
+    return () => clearInterval(statusInterval);
+  }, [room, roomId, hasJoined]);
+
+  // Clean up disconnected participants (runs every 5 minutes)
+  useEffect(() => {
+    if (!room || !roomId || !hasJoined) return;
+
+    const cleanupDisconnectedUsers = async () => {
+      const now = new Date();
+      const participantEntries = Object.entries(room.participants);
+      
+      // Find participants who have been disconnected for more than 15 minutes
+      const disconnectedParticipants = participantEntries.filter(([, participant]) => {
+        if (!participant.lastActivity) return false;
+        
+        const lastActivity = new Date(participant.lastActivity);
+        const minutesSinceActivity = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60));
+        
+        return minutesSinceActivity > 15; // 15 minutes threshold
+      });
+
+      if (disconnectedParticipants.length === 0) return;
+
+      console.log(`Cleaning up ${disconnectedParticipants.length} disconnected participants`);
+
+      try {
+        const docRef = doc(db, 'rooms', roomId);
+        
+        // Remove disconnected participants and their votes
+        const updates: Record<string, any> = {};
+        const disconnectedIds = disconnectedParticipants.map(([id]) => id);
+        
+        disconnectedIds.forEach(id => {
+          updates[`participants.${id}`] = deleteField();
+          if (room.votes?.[id]) {
+            updates[`votes.${id}`] = deleteField();
+          }
+        });
+
+        // Check if any remaining participants exist
+        const remainingParticipants = participantEntries.filter(([id]) => !disconnectedIds.includes(id));
+        
+        if (remainingParticipants.length === 0) {
+          // If no participants left, delete the entire room
+          await deleteDoc(docRef);
+          await trackRoomClosedSafe();
+          console.log('Room deleted - no active participants remaining');
+        } else {
+          // Check if we need to assign a new host
+          const wasHostDisconnected = disconnectedParticipants.some(([, participant]) => participant.isHost);
+          
+          if (wasHostDisconnected) {
+            // Find a new host from remaining participants
+            const newHostId = remainingParticipants[0][0];
+            updates[`participants.${newHostId}.isHost`] = true;
+            console.log(`Assigned new host: ${newHostId}`);
+          }
+
+          await updateDoc(docRef, updates);
+          console.log('Cleaned up disconnected participants');
+        }
+      } catch (error) {
+        console.error('Error cleaning up disconnected participants:', error);
+      }
+    };
+
+    // Run cleanup every 5 minutes
+    const cleanupInterval = setInterval(cleanupDisconnectedUsers, 5 * 60 * 1000);
+    
+    // Also run cleanup on component mount (after a short delay)
+    const initialCleanupTimeout = setTimeout(cleanupDisconnectedUsers, 10000);
+    
+    return () => {
+      clearInterval(cleanupInterval);
+      clearTimeout(initialCleanupTimeout);
+    };
+  }, [room, roomId, hasJoined]);
+
   // Initialize userId from localStorage
   useEffect(() => {
     const storedUserId = localStorage.getItem('userId');
@@ -344,9 +500,22 @@ export default function RoomPage() {
     setSelectedCard(value);
     try {
       const docRef = doc(db, 'rooms', roomId);
-      await updateDoc(docRef, {
-        [`votes.${userId}`]: { value }
-      });
+      
+      // Check if this is the first vote and auto-lock room if enabled
+      const isFirstVote = Object.keys(room.votes || {}).length === 0;
+      const updateData: any = {
+        [`votes.${userId}`]: { value },
+        [`participants.${userId}.lastActivity`]: new Date(),
+        [`participants.${userId}.status`]: 'active'
+      };
+      
+      // Auto-lock room on first vote (unless already locked)
+      if (isFirstVote && !room.isLocked) {
+        updateData.isLocked = true;
+        console.log('🔒 Auto-locking room on first vote');
+      }
+      
+      await updateDoc(docRef, updateData);
       
       // Track analytics
       await trackVoteCastSafe();
@@ -379,8 +548,15 @@ export default function RoomPage() {
       return;
     }
 
-    // Check password if room is password-protected (unless user is the creator)
+    // Check if room is locked (unless user is the creator)
     const isCreator = sessionStorage.getItem('roomCreator') === room.roomCode;
+    if (room.isLocked && !isCreator) {
+      console.log('🔒 Room is locked, preventing new participant from joining');
+      setError('This room is locked and not accepting new participants.');
+      return;
+    }
+
+    // Check password if room is password-protected (unless user is the creator)
     if (room.password && !isCreator) {
       console.log('🔒 Room is password protected, checking password...');
       if (!password) {
@@ -422,7 +598,9 @@ export default function RoomPage() {
         [`participants.${userId}`]: {
           name: name,
           isHost: isFirstParticipant, // First person becomes the host
-          role: 'voter'
+          role: 'voter',
+          lastActivity: new Date(),
+          status: 'active'
         }
       });      console.log('Successfully joined room');
       
@@ -509,13 +687,14 @@ export default function RoomPage() {
       await updateDoc(docRef, {
         votesRevealed: false,
         votes: {}, // This clears all participant votes
-        currentTicket: ''
+        currentTicket: '',
+        isLocked: false // Unlock room for new participants when starting new round
       });
       
       // Reset local selected card state
       setSelectedCard(null);
       
-      console.log('Round reset successfully - all votes cleared');
+      console.log('Round reset successfully - all votes cleared and room unlocked');
     } catch (error) {
       console.error('Error resetting votes:', error);
     }
@@ -645,6 +824,11 @@ export default function RoomPage() {
     updateRoomSetting('confettiEnabled', !room.confettiEnabled);
   };
 
+  const toggleRoomLock = () => {
+    if (!room) return;
+    updateRoomSetting('isLocked', !room.isLocked);
+  };
+
   const changeScale = (newScale: ScaleType) => {
     if (!room || !room.votesRevealed) return; // Prevent scale change during voting
     
@@ -689,10 +873,10 @@ export default function RoomPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-2">Error</h1>
-          <p className="text-gray-600">{error}</p>
+          <p className="text-slate-600 dark:text-[#aaaaaa]">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="mt-4 px-4 py-2 bg-[#3b82f6] text-white rounded hover:bg-[#2563eb] shadow-md hover:shadow-lg transition-all duration-200"
           >
             Try Again
           </button>
@@ -837,12 +1021,17 @@ export default function RoomPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               )}
+              {room?.isLocked && (
+                <svg className="w-3 h-3 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              )}
               {copied ? (
                 <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               ) : (
-                <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-3 h-3 text-slate-400 dark:text-[#aaaaaa]" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
                   <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
                 </svg>
@@ -895,7 +1084,9 @@ export default function RoomPage() {
             </button>
           </div>
         </div>
-      </div>      {/* Body Content - 2 Column Layout */}
+      </div>
+
+      {/* Body Content - 2 Column Layout */}
       <div className="max-w-7xl mx-auto">        <div className="grid lg:grid-cols-4 gap-6">          {/* Left Column - Voting Info & Participants */}
           <div className="lg:col-span-1 space-y-6">
             {/* Vote Progress, Current Ticket & Room Settings - Combined */}
@@ -997,8 +1188,8 @@ export default function RoomPage() {
                           </div>
                           <button
                             onClick={toggleAnonymousVoting}
-                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                              room.anonymousVoting ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-1 ${
+                              room.anonymousVoting ? 'bg-[#3b82f6]' : 'bg-slate-200 dark:bg-[#404040]'
                             }`}
                             role="switch"
                             aria-checked={room.anonymousVoting}
@@ -1013,15 +1204,15 @@ export default function RoomPage() {
                         </div>
 
                         {/* Card Tooltips Setting */}
-                        <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                        <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-[#303030] rounded">
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Card tooltips</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">Show card descriptions</div>
+                            <div className="text-sm font-medium text-slate-900 dark:text-[#f1f1f1]">Card tooltips</div>
+                            <div className="text-xs text-slate-500 dark:text-[#aaaaaa]">Show card descriptions</div>
                           </div>
                           <button
                             onClick={toggleTooltips}
-                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                              room.showTooltips ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-1 ${
+                              room.showTooltips ? 'bg-[#3b82f6]' : 'bg-slate-200 dark:bg-[#404040]'
                             }`}
                             role="switch"
                             aria-checked={room.showTooltips}
@@ -1036,15 +1227,15 @@ export default function RoomPage() {
                         </div>
 
                         {/* Confetti Celebrations Setting */}
-                        <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                        <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-[#303030] rounded">
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Confetti celebrations</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">Show confetti on reveal</div>
+                            <div className="text-sm font-medium text-slate-900 dark:text-[#f1f1f1]">Confetti celebrations</div>
+                            <div className="text-xs text-slate-500 dark:text-[#aaaaaa]">Show confetti on reveal</div>
                           </div>
                           <button
                             onClick={toggleConfetti}
-                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                              room.confettiEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-1 ${
+                              room.confettiEnabled ? 'bg-[#3b82f6]' : 'bg-slate-200 dark:bg-[#404040]'
                             }`}
                             role="switch"
                             aria-checked={room.confettiEnabled}
@@ -1053,6 +1244,29 @@ export default function RoomPage() {
                             <span
                               className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
                                 room.confettiEnabled ? 'translate-x-4' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Room Lock Setting */}
+                        <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-[#303030] rounded">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-slate-900 dark:text-[#f1f1f1]">Lock room</div>
+                            <div className="text-xs text-slate-500 dark:text-[#aaaaaa]">Prevent new participants from joining</div>
+                          </div>
+                          <button
+                            onClick={toggleRoomLock}
+                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-1 ${
+                              room.isLocked ? 'bg-red-600' : 'bg-slate-200 dark:bg-[#404040]'
+                            }`}
+                            role="switch"
+                            aria-checked={room.isLocked}
+                            aria-label="Lock room"
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                room.isLocked ? 'translate-x-4' : 'translate-x-0'
                               }`}
                             />
                           </button>
@@ -1067,7 +1281,7 @@ export default function RoomPage() {
             {/* Participants Section */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-800 dark:text-[#f1f1f1] flex items-center gap-2">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.5 17H4a1 1 0 0 1-1-1 3 3 0 0 1 3-3h1m0-3.05A2.5 2.5 0 1 1 9 5.5M19.5 17h.5a1 1 0 0 0 1-1 3 3 0 0 0-3-3h-1m0-3.05a2.5 2.5 0 1 0-2-4.45m.5 13.5h-7a1 1 0 0 1-1-1 3 3 0 0 1 3-3h3a3 3 0 0 1 3 3 1 1 0 0 1-1 1Zm-1-9.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z" />
                   </svg>
@@ -1253,7 +1467,7 @@ export default function RoomPage() {
                       </p>
                     )}
                     {!allVotersHaveVoted && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-slate-500 dark:text-[#aaaaaa]">
                         {voterCount === 0 ? 'No voters in room' : `${votedCount} of ${voterCount} voted`}
                       </p>
                     )}
@@ -1272,8 +1486,8 @@ export default function RoomPage() {
         )}        {/* Version Footer */}
         <div className="text-center mt-8 space-y-1">
           {/* <p className="text-xs text-gray-400 dark:text-gray-500">v{packageJson.version}</p> */}
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Press <kbd className="px-2 py-1 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-gray-600 dark:text-gray-300">H</kbd> for keyboard shortcuts
+          <p className="text-xs text-slate-500 dark:text-[#aaaaaa]">
+            Press <kbd className="px-2 py-1 text-xs bg-white dark:bg-[#212121] border border-slate-200 dark:border-[#303030] rounded text-slate-600 dark:text-[#aaaaaa]">H</kbd> for keyboard shortcuts
           </p>
         </div>
 
