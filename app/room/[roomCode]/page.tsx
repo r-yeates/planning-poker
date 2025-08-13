@@ -18,7 +18,6 @@ import KeyboardShortcuts from '@/app/components/room/KeyboardShortcuts';
 import { triggerVoteRevealConfetti } from '@/app/components/room/ConfettiCelebration';
 import TicketQueue from '@/app/components/room/TicketQueue';
 import VotingTimer from '@/app/components/room/VotingTimer';
-import PrivacyTermsFooter from '@/app/components/global/PrivacyTermsFooter';
 
 export default function RoomPage() {
   const { roomCode } = useParams();
@@ -91,7 +90,7 @@ export default function RoomPage() {
 
     const updateStatuses = async () => {
       const now = new Date();
-      const updates: Record<string, any> = {};
+      const updates: Record<string, string> = {};
       
       Object.entries(room.participants).forEach(([id, participant]) => {
         if (!participant.lastActivity) return;
@@ -149,7 +148,7 @@ export default function RoomPage() {
         const docRef = doc(db, 'rooms', roomId);
         
         // Remove disconnected participants and their votes
-        const updates: Record<string, any> = {};
+        const updates: Record<string, ReturnType<typeof deleteField> | boolean> = {};
         const disconnectedIds = disconnectedParticipants.map(([id]) => id);
         
         disconnectedIds.forEach(id => {
@@ -361,7 +360,7 @@ export default function RoomPage() {
     
     // Update previous state for next comparison
     setPreviousRoundState(currentState);
-  }, [room?.votesRevealed, room?.votes, hasJoined, showNewRoundNotification, room]);
+  }, [room?.votesRevealed, room?.votes, hasJoined, showNewRoundNotification, room, previousRoundState]);
   // Sync selected card with user's vote in database
   useEffect(() => {
     if (!room || !userId) return;
@@ -503,7 +502,7 @@ export default function RoomPage() {
       
       // Check if this is the first vote and auto-lock room if enabled
       const isFirstVote = Object.keys(room.votes || {}).length === 0;
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         [`votes.${userId}`]: { value },
         [`participants.${userId}.lastActivity`]: new Date(),
         [`participants.${userId}.status`]: 'active'

@@ -3,17 +3,16 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { doc, onSnapshot, updateDoc, deleteDoc, deleteField } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
-import { trackParticipantJoinedSafe, trackVoteCastSafe, trackVotingRoundCompletedSafe, trackRoomClosedSafe } from '@/lib/analytics-buffer';
+import { trackParticipantJoinedSafe, trackVoteCastSafe, trackVotingRoundCompletedSafe } from '@/lib/analytics-buffer';
 import type { Room } from '@/lib/firebase';
-import { ESTIMATION_SCALES, type ScaleType } from '@/lib/estimation-scales';
+import { ESTIMATION_SCALES } from '@/lib/estimation-scales';
 
 import NamePrompt from '@/app/components/room/NamePrompt';
 import ThemeToggle from '@/app/components/global/ThemeToggle';
 import ParticipantCard from '@/app/components/room/ParticipantCard';
 import VotingCards from '@/app/components/room/VotingCards';
-import VoteProgressIndicator from '@/app/components/room/VoteProgressIndicator';
 import KeyboardShortcuts from '@/app/components/room/KeyboardShortcuts';
 import { triggerVoteRevealConfetti } from '@/app/components/room/ConfettiCelebration';
 import TicketQueue from '@/app/components/room/TicketQueue';
@@ -38,8 +37,6 @@ export default function RoomPageRedesign() {
   const [wasInRoom, setWasInRoom] = useState(false);
   const [showNewRoundNotification, setShowNewRoundNotification] = useState(false);
   const [isNotificationVisible, setIsNotificationVisible] = useState(false);
-  const [previousRoundState, setPreviousRoundState] = useState<{votesRevealed: boolean; hasVotes: boolean} | null>(null);
-  const [isLeavingRoom, setIsLeavingRoom] = useState(false);
 
   // Redesign-specific state
   const [showParticipantDetails, setShowParticipantDetails] = useState(false);
@@ -212,7 +209,7 @@ export default function RoomPageRedesign() {
       const docRef = doc(db, 'rooms', roomId);
       
       const isFirstVote = Object.keys(room.votes || {}).length === 0;
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         [`votes.${userId}`]: { value },
         [`participants.${userId}.lastActivity`]: new Date(),
         [`participants.${userId}.status`]: 'active'
@@ -432,7 +429,7 @@ export default function RoomPageRedesign() {
     );
   }
 
-  if (error && !isLeavingRoom) {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0f0f0f]">
         <div className="text-center max-w-md mx-auto px-6">
@@ -865,7 +862,7 @@ export default function RoomPageRedesign() {
             ].map((panel) => (
               <button
                 key={panel.id}
-                onClick={() => setActiveBottomPanel(activeBottomPanel === panel.id ? 'none' : panel.id as any)}
+                onClick={() => setActiveBottomPanel(activeBottomPanel === panel.id ? 'none' : panel.id as 'queue' | 'settings' | 'history')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   activeBottomPanel === panel.id
                     ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
