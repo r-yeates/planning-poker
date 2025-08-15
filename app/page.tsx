@@ -688,7 +688,7 @@ export default function HomePage() {
                         block: 'start'
                       });
                     }}
-                    className="inline-flex items-center gap-3 bg-transparent hover:bg-[#272727] text-slate-900 dark:text-[#f1f1f1] px-8 py-4 rounded-xl font-semibold text-lg border-2 border-slate-300 dark:border-[#404040] hover:border-[#3b82f6] dark:hover:border-[#60a5fa] shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200"
+                    className="inline-flex items-center gap-3 bg-white dark:bg-transparent hover:bg-blue-50 dark:hover:bg-[#272727] text-slate-900 dark:text-[#f1f1f1] px-8 py-4 rounded-xl font-semibold text-lg border-2 border-slate-300 dark:border-[#404040] hover:border-[#3b82f6] dark:hover:border-[#60a5fa] shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
