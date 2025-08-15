@@ -502,20 +502,18 @@ export default function RoomPage() {
       
       // Check if this is the first vote and auto-lock room if enabled
       const isFirstVote = Object.keys(room.votes || {}).length === 0;
-      const updateData: Record<string, unknown> = {
+      const updateData: Record<string, any> = {
         [`votes.${userId}`]: { value },
         [`participants.${userId}.lastActivity`]: new Date(),
         [`participants.${userId}.status`]: 'active'
       };
-      
       // Auto-lock room on first vote (unless already locked)
       if (isFirstVote && !room.isLocked) {
         updateData.isLocked = true;
         console.log('🔒 Auto-locking room on first vote');
       }
-      
-      await updateDoc(docRef, updateData);
-      
+      // Cast updateData to the type expected by updateDoc
+      await updateDoc(docRef, updateData as { [x: string]: import('firebase/firestore').FieldValue | Partial<any> | undefined });
       // Track analytics
       await trackVoteCastSafe();
     } catch (error) {
