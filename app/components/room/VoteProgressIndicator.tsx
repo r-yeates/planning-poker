@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Room } from '@/lib/firebase';
 
 interface VoteProgressIndicatorProps {
@@ -17,7 +17,7 @@ export default function VoteProgressIndicator({
   compact = false
 }: VoteProgressIndicatorProps) {
   // Round timer state
-  const [roundStartTime, setRoundStartTime] = useState<number | null>(null);
+  const roundStartTimeRef = useRef<number | null>(null);
   const [roundElapsedTime, setRoundElapsedTime] = useState(0);
   const [isRoundActive, setIsRoundActive] = useState(false);
 
@@ -37,7 +37,7 @@ export default function VoteProgressIndicator({
     // Start round timer when voting is possible (has voters) and no votes yet (new round)
     if (voterCount > 0 && !hasVotes && !votesRevealed) {
       if (!isRoundActive) {
-        setRoundStartTime(Date.now());
+        roundStartTimeRef.current = Date.now();
         setIsRoundActive(true);
         setRoundElapsedTime(0);
       }
@@ -45,6 +45,7 @@ export default function VoteProgressIndicator({
     // Stop round timer when votes are revealed
     else if (votesRevealed) {
       setIsRoundActive(false);
+      roundStartTimeRef.current = null;
     }
   }, [room.votes, room.votesRevealed, isRoundActive, voterCount]);
 
@@ -52,12 +53,18 @@ export default function VoteProgressIndicator({
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
 
-    if (isRoundActive && roundStartTime) {
-      interval = setInterval(() => {
+    if (isRoundActive && roundStartTimeRef.current) {
+      const updateElapsedTime = () => {
         const now = Date.now();
-        const elapsed = Math.floor((now - roundStartTime) / 1000);
+        const elapsed = Math.floor((now - roundStartTimeRef.current!) / 1000);
         setRoundElapsedTime(elapsed);
-      }, 1000);
+      };
+
+      // Update immediately
+      updateElapsedTime();
+      
+      // Then set up interval
+      interval = setInterval(updateElapsedTime, 1000);
     }
 
     return () => {
@@ -65,7 +72,7 @@ export default function VoteProgressIndicator({
         clearInterval(interval);
       }
     };
-  }, [isRoundActive, roundStartTime]);
+  }, [isRoundActive]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);

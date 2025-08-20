@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { doc, onSnapshot, updateDoc, deleteDoc, deleteField } from 'firebase/firestore';
 import { db, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
@@ -25,7 +25,6 @@ export default function RoomPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [selectedCard, setSelectedCard] = useState<number | string | null>(null);  const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -232,69 +231,46 @@ export default function RoomPage() {
           setIsLoading(false);
           return;
         }
-          setRoomId(roomData.id);
+        setRoomId(roomData.id);
       
         // Set up room listener
         const unsubscribe = onSnapshot(
-          doc(db, 'rooms', roomData.id),          (doc) => {
-            if (doc.exists()) {
-              const roomData = doc.data() as Room;
-              
-              // Set room data first
-              setRoom(roomData);
-              setIsLoading(false);
-              
-              // Then handle user joining logic
-              if (roomData.participants[userId]) {
-                setHasJoined(true);
-                setWasInRoom(true); // Track that user was in room
-                setShowNamePrompt(false);
-              } else {
-                // Check if user was just redirected from home page (verified)
-                const isVerified = sessionStorage.getItem('roomJoinVerified');
-                const isCreator = sessionStorage.getItem('roomCreator');
-                const userName = localStorage.getItem('userName');
-                
-                if (!userName) {
-                  setShowNamePrompt(true);
-                  setHasJoined(false);
-                } else if (isVerified === roomCode) {
-                  // Clear the verification flag and mark for auto-join
-                  sessionStorage.removeItem('roomJoinVerified');
-                  // Clear creator flag if it exists
-                  if (isCreator === roomCode) {
-                    sessionStorage.removeItem('roomCreator');
-                  }
-                  // Set a flag to auto-join once everything is loaded
-                  setShowNamePrompt(false);
-                  setHasJoined(false);
-                  // Auto-join will happen in a separate effect after roomId is set                } else {
-                  setShowNamePrompt(true);
-                  setHasJoined(false);
-                }
-              }
-            } else {
+          doc(db, 'rooms', roomData.id),
+          (doc) => {
+            if (!doc.exists()) {
               setError('Room not found');
               setIsLoading(false);
+              return;
             }
+            
+            const roomData = doc.data() as Room;
+            setRoom(roomData);
+            setIsLoading(false);
           },
           (error) => {
-            console.error('Error fetching room:', error);
-            setError('Error loading room');
+            console.error('Room subscription error:', error);
+            setError('Failed to subscribe to room updates');
             setIsLoading(false);
           }
         );
 
         unsubscribeRef = unsubscribe;
-        return unsubscribe;
       } catch (error) {
-        console.error('Error looking up room:', error);
-        setError('Error loading room');
+        console.error('Error setting up room subscription:', error);
+        setError('Failed to connect to room');
         setIsLoading(false);
       }
     };
 
     lookupAndSubscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribeRef) {
+        console.log('Cleaning up room subscription');
+        unsubscribeRef();
+      }
+    };
 
     // Cleanup function
     return () => {
@@ -305,12 +281,40 @@ export default function RoomPage() {
     };
   }, [roomCode, userId]);
 
-  // Update isAdmin status whenever room or userId changes
-  useEffect(() => {
-    if (room && userId) {
-      setIsAdmin(room.participants[userId]?.isHost || false);
-    }
+  // Memoized admin status
+  const isAdmin = useMemo(() => {
+    return room && userId ? (room.participants[userId]?.isHost || false) : false;
   }, [room, userId]);
+  // Handle participant status changes
+  useEffect(() => {
+    if (!room || !userId) return;
+    
+    if (room.participants[userId]) {
+      setHasJoined(true);
+      setWasInRoom(true);
+      setShowNamePrompt(false);
+    } else {
+      const isVerified = sessionStorage.getItem('roomJoinVerified');
+      const isCreator = sessionStorage.getItem('roomCreator');
+      const userName = localStorage.getItem('userName');
+      
+      if (!userName) {
+        setShowNamePrompt(true);
+        setHasJoined(false);
+      } else if (isVerified === roomCode) {
+        sessionStorage.removeItem('roomJoinVerified');
+        if (isCreator === roomCode) {
+          sessionStorage.removeItem('roomCreator');
+        }
+        setShowNamePrompt(false);
+        setHasJoined(false);
+      } else {
+        setShowNamePrompt(true);
+        setHasJoined(false);
+      }
+    }
+  }, [room, userId, roomCode]);
+
   // Check if Web Share API is available
   useEffect(() => {
     setCanShare(typeof navigator !== 'undefined' && 'share' in navigator);
@@ -501,17 +505,11 @@ export default function RoomPage() {
       const docRef = doc(db, 'rooms', roomId);
       
       // Check if this is the first vote and auto-lock room if enabled
-      const isFirstVote = Object.keys(room.votes || {}).length === 0;
       const updateData: Record<string, import('firebase/firestore').FieldValue | object | string | number | boolean | undefined> = {
         [`votes.${userId}`]: { value },
         [`participants.${userId}.lastActivity`]: new Date(),
         [`participants.${userId}.status`]: 'active'
       };
-      // Auto-lock room on first vote (unless already locked)
-      if (isFirstVote && !room.isLocked) {
-        updateData.isLocked = true;
-        console.log('🔒 Auto-locking room on first vote');
-      }
       await updateDoc(docRef, updateData);
       // Track analytics
       await trackVoteCastSafe();
