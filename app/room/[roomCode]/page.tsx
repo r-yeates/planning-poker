@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
-import { doc, onSnapshot, updateDoc, deleteDoc, deleteField } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, deleteDoc, deleteField, getDoc } from 'firebase/firestore';
 import { db, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
 import { trackParticipantJoinedSafe, trackVoteCastSafe, trackVotingRoundCompletedSafe, trackRoomClosedSafe } from '@/lib/analytics-buffer';
 import type { Room } from '@/lib/firebase';
@@ -85,74 +85,83 @@ export default function RoomPage() {
 
   // Update participant status based on activity (runs every minute)
   useEffect(() => {
-    if (!room || !roomId || !hasJoined) return;
+    if (!roomId || !hasJoined) return;
 
     const updateStatuses = async () => {
-      const now = new Date();
-      const updates: Record<string, string> = {};
-      
-      Object.entries(room.participants).forEach(([id, participant]) => {
-        if (!participant.lastActivity) return;
+      // Get the current room data directly from Firestore to avoid stale state
+      try {
+        const roomDoc = doc(db, 'rooms', roomId);
+        const roomSnapshot = await getDoc(roomDoc);
+        if (!roomSnapshot.exists()) return;
         
-        const lastActivity = new Date(participant.lastActivity);
-        const minutesSinceActivity = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60));
+        const currentRoom = roomSnapshot.data() as Room;
+        const now = new Date();
+        const updates: Record<string, string> = {};
         
-        let newStatus: 'active' | 'idle' | 'disconnected';
-        if (minutesSinceActivity < 2) newStatus = 'active';
-        else if (minutesSinceActivity < 10) newStatus = 'idle';
-        else newStatus = 'disconnected';
-        
-        if (participant.status !== newStatus) {
-          updates[`participants.${id}.status`] = newStatus;
-        }
-      });
+        Object.entries(currentRoom.participants).forEach(([id, participant]) => {
+          if (!participant.lastActivity) return;
+          
+          const lastActivity = new Date(participant.lastActivity);
+          const minutesSinceActivity = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60));
+          
+          let newStatus: 'active' | 'idle' | 'disconnected';
+          if (minutesSinceActivity < 2) newStatus = 'active';
+          else if (minutesSinceActivity < 10) newStatus = 'idle';
+          else newStatus = 'disconnected';
+          
+          if (participant.status !== newStatus) {
+            updates[`participants.${id}.status`] = newStatus;
+          }
+        });
 
-      if (Object.keys(updates).length > 0) {
-        try {
-          const docRef = doc(db, 'rooms', roomId);
-          await updateDoc(docRef, updates);
-        } catch (error) {
-          console.error('Error updating participant statuses:', error);
+        if (Object.keys(updates).length > 0) {
+          await updateDoc(roomDoc, updates);
         }
+      } catch (error) {
+        console.error('Error updating participant statuses:', error);
       }
     };
 
     const statusInterval = setInterval(updateStatuses, 60000); // Check every minute
     return () => clearInterval(statusInterval);
-  }, [room, roomId, hasJoined]);
+  }, [roomId, hasJoined]);
 
   // Clean up disconnected participants (runs every 5 minutes)
   useEffect(() => {
-    if (!room || !roomId || !hasJoined) return;
+    if (!roomId || !hasJoined) return;
 
     const cleanupDisconnectedUsers = async () => {
-      const now = new Date();
-      const participantEntries = Object.entries(room.participants);
-      
-      // Find participants who have been disconnected for more than 15 minutes
-      const disconnectedParticipants = participantEntries.filter(([, participant]) => {
-        if (!participant.lastActivity) return false;
-        
-        const lastActivity = new Date(participant.lastActivity);
-        const minutesSinceActivity = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60));
-        
-        return minutesSinceActivity > 15; // 15 minutes threshold
-      });
-
-      if (disconnectedParticipants.length === 0) return;
-
-      console.log(`Cleaning up ${disconnectedParticipants.length} disconnected participants`);
-
       try {
-        const docRef = doc(db, 'rooms', roomId);
+        // Get fresh room data to avoid stale state
+        const roomDoc = doc(db, 'rooms', roomId);
+        const roomSnapshot = await getDoc(roomDoc);
+        if (!roomSnapshot.exists()) return;
         
+        const currentRoom = roomSnapshot.data() as Room;
+        const now = new Date();
+        const participantEntries = Object.entries(currentRoom.participants);
+        
+        // Find participants who have been disconnected for more than 15 minutes
+        const disconnectedParticipants = participantEntries.filter(([, participant]) => {
+          if (!participant.lastActivity) return false;
+          
+          const lastActivity = new Date(participant.lastActivity);
+          const minutesSinceActivity = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60));
+          
+          return minutesSinceActivity > 15; // 15 minutes threshold
+        });
+
+        if (disconnectedParticipants.length === 0) return;
+
+        console.log(`Cleaning up ${disconnectedParticipants.length} disconnected participants`);
+
         // Remove disconnected participants and their votes
         const updates: Record<string, ReturnType<typeof deleteField> | boolean> = {};
         const disconnectedIds = disconnectedParticipants.map(([id]) => id);
         
         disconnectedIds.forEach(id => {
           updates[`participants.${id}`] = deleteField();
-          if (room.votes?.[id]) {
+          if (currentRoom.votes?.[id]) {
             updates[`votes.${id}`] = deleteField();
           }
         });
@@ -162,7 +171,7 @@ export default function RoomPage() {
         
         if (remainingParticipants.length === 0) {
           // If no participants left, delete the entire room
-          await deleteDoc(docRef);
+          await deleteDoc(roomDoc);
           await trackRoomClosedSafe();
           console.log('Room deleted - no active participants remaining');
         } else {
@@ -176,7 +185,7 @@ export default function RoomPage() {
             console.log(`Assigned new host: ${newHostId}`);
           }
 
-          await updateDoc(docRef, updates);
+          await updateDoc(roomDoc, updates);
           console.log('Cleaned up disconnected participants');
         }
       } catch (error) {
@@ -194,7 +203,7 @@ export default function RoomPage() {
       clearInterval(cleanupInterval);
       clearTimeout(initialCleanupTimeout);
     };
-  }, [room, roomId, hasJoined]);
+  }, [roomId, hasJoined]);
 
   // Initialize userId from localStorage
   useEffect(() => {
@@ -265,14 +274,6 @@ export default function RoomPage() {
     lookupAndSubscribe();
 
     // Cleanup subscription on unmount
-    return () => {
-      if (unsubscribeRef) {
-        console.log('Cleaning up room subscription');
-        unsubscribeRef();
-      }
-    };
-
-    // Cleanup function
     return () => {
       if (unsubscribeRef) {
         console.log('Cleaning up room subscription');
@@ -901,71 +902,50 @@ export default function RoomPage() {
       </div>
     );
   }  const votes = Object.entries(room.votes || {});
-  const averageVote = room.votesRevealed
-    ? (() => {
-        const numericVotes = votes
-          .map(([, v]) => v.value)
-          .filter((value): value is number => typeof value === 'number' && !isNaN(value));
-        
-        return numericVotes.length > 0 
-          ? numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length 
-          : null;
-      })()
-    : null;
 
-  // Calculate consensus data
-  const consensusData = room.votesRevealed && votes.length > 0
+  // Calculate vote distribution data
+  const voteStatsData = room.votesRevealed && votes.length > 0
     ? (() => {
         const numericVotes = votes
           .map(([, v]) => v.value)
           .filter((value): value is number => typeof value === 'number' && !isNaN(value));
         
-        if (numericVotes.length < 2) return null;
+        if (numericVotes.length === 0) return null;
         
-        const minVote = Math.min(...numericVotes);
-        const maxVote = Math.max(...numericVotes);
-        const spread = maxVote - minVote;
+        // Calculate distribution
+        const distribution = new Map<number, number>();
+        numericVotes.forEach(vote => {
+          distribution.set(vote, (distribution.get(vote) || 0) + 1);
+        });
         
-        // Calculate consensus percentage
-        let consensus = 100;
-        if (spread > 0) {
-          // Perfect consensus = 100%, larger spread = lower consensus
-          // Formula: 100 - (spread / maxVote * 100), with minimum of 0
-          consensus = Math.max(0, Math.round(100 - (spread / Math.max(maxVote, 1)) * 100));
-        }
+        // Calculate statistics
+        const sortedVotes = [...numericVotes].sort((a, b) => a - b);
+        const minVote = sortedVotes[0];
+        const maxVote = sortedVotes[sortedVotes.length - 1];
+        const average = numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length;
+        const median = sortedVotes.length % 2 === 0
+          ? (sortedVotes[sortedVotes.length / 2 - 1] + sortedVotes[sortedVotes.length / 2]) / 2
+          : sortedVotes[Math.floor(sortedVotes.length / 2)];
         
-        // Determine consensus level and color
-        let level = '';
-        let color = '';
-        let bgColor = '';
-        let textColor = '';
+        // Create distribution data for chart
+        const distributionData = Array.from(distribution.entries())
+          .sort(([a], [b]) => a - b)
+          .map(([value, count]) => ({ value, count, percentage: (count / numericVotes.length) * 100 }));
         
-        if (consensus >= 90) {
-          level = 'Excellent';
-          color = 'text-green-600 dark:text-green-400';
-          bgColor = 'bg-green-50 dark:bg-green-900/20';
-          textColor = 'text-green-800 dark:text-green-200';
-        } else if (consensus >= 70) {
-          level = 'Good';
-          color = 'text-yellow-600 dark:text-yellow-400';
-          bgColor = 'bg-yellow-50 dark:bg-yellow-900/20';
-          textColor = 'text-yellow-800 dark:text-yellow-200';
-        } else {
-          level = 'Needs Discussion';
-          color = 'text-red-600 dark:text-red-400';
-          bgColor = 'bg-red-50 dark:bg-red-900/20';
-          textColor = 'text-red-800 dark:text-red-200';
-        }
+        // Find most common vote
+        const mostCommon = distributionData.reduce((prev, current) => 
+          prev.count > current.count ? prev : current
+        );
         
         return {
-          consensus,
-          level,
-          color,
-          bgColor,
-          textColor,
-          spread,
+          distribution: distributionData,
+          totalVotes: numericVotes.length,
           minVote,
-          maxVote
+          maxVote,
+          average: Math.round(average * 10) / 10,
+          median,
+          mostCommon: mostCommon.value,
+          spread: maxVote - minVote
         };
       })()
     : null;return (
@@ -1304,7 +1284,6 @@ export default function RoomPage() {
                           isAdmin={isAdmin}
                           votesRevealed={room.votesRevealed}
                           anonymousVoting={room.anonymousVoting}
-                          averageVote={averageVote ?? undefined}
                           onKick={handleKickParticipant}
                           onMakeHost={handleMakeHost}
                           isHost={participant.isHost}
@@ -1325,97 +1304,100 @@ export default function RoomPage() {
 
           {/* Right Column - Game Content (Large) */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Average Vote Display */}
-            {room.votesRevealed && averageVote !== null && (
-              <div className="bg-white dark:bg-[#212121] p-4 rounded-lg shadow border border-slate-200 dark:border-[#303030]">
-                <h2 className="text-base font-medium text-slate-700 dark:text-[#cccccc]">Average Vote</h2>
-                <p className="text-xl text-slate-900 dark:text-[#f1f1f1]">{averageVote.toFixed(1)}</p>
-                {(() => {
-                  const totalVotes = votes.length;
-                  const numericVotes = votes
-                    .map(([, v]) => v.value)
-                    .filter((value): value is number => typeof value === 'number' && !isNaN(value));
-                  const nonNumericCount = totalVotes - numericVotes.length;
-                  
-                  return nonNumericCount > 0 && (
-                    <p className="text-sm text-slate-500 dark:text-[#888888] mt-1">
-                      Based on {numericVotes.length} numeric vote{numericVotes.length !== 1 ? 's' : ''} 
-                      {nonNumericCount > 0 && ` (${nonNumericCount} abstention${nonNumericCount !== 1 ? 's' : ''})`}
-                    </p>
-                  );
-                })()}
+        {/* Vote Statistics Chart */}
+        {voteStatsData && (
+          <div className="bg-white dark:bg-[#212121] border border-slate-200 dark:border-[#303030] p-6 rounded-lg shadow">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Vote Distribution
+              </h3>
+              <div className="text-sm text-slate-600 dark:text-[#aaaaaa]">
+                {voteStatsData.totalVotes} votes
               </div>
-            )}
+            </div>
 
-        {/* Consensus Indicator */}
-        {consensusData && (
-          <div className={`${consensusData.bgColor} border-l-4 border-l-green-500 p-4 rounded-lg shadow ${
-            consensusData.consensus >= 90 ? 'border-l-green-500' : 
-            consensusData.consensus >= 70 ? 'border-l-yellow-500' : 'border-l-red-500'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  {consensusData.consensus >= 90 ? (
-                    <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  ) : consensusData.consensus >= 70 ? (
-                    <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                  )}
-                  <div>
-                    <h3 className={`font-semibold ${consensusData.textColor}`}>
-                      Team Consensus: {consensusData.level}
-                    </h3>
-                    <p className={`text-sm ${consensusData.textColor} opacity-90`}>
-                      {consensusData.consensus}% alignment (spread: {consensusData.spread} points)
-                    </p>
+            {/* Distribution Chart */}
+            <div className="mb-6">
+              <div className="space-y-3">
+                {voteStatsData.distribution.map(({ value, count, percentage }) => (
+                  <div key={value} className="flex items-center gap-3">
+                    <div className="w-12 text-sm font-medium text-slate-700 dark:text-[#cccccc]">
+                      {value}pt
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-slate-200 dark:bg-[#404040] rounded-full h-6 relative">
+                          <div 
+                            className="bg-gradient-to-r from-blue-500 to-purple-600 h-6 rounded-full flex items-center justify-end pr-2 transition-all duration-500"
+                            style={{ width: `${Math.max(percentage, 8)}%` }}
+                          >
+                            <span className="text-white text-xs font-medium">
+                              {count}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="w-12 text-sm text-slate-600 dark:text-[#aaaaaa]">
+                          {Math.round(percentage)}%
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Statistics Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-3 bg-slate-50 dark:bg-[#2a2a2a] rounded-lg">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {voteStatsData.average}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-[#aaaaaa]">
+                  Average
                 </div>
               </div>
               
-              <div className="text-right">
-                <div className={`text-2xl font-bold ${consensusData.color}`}>
-                  {consensusData.consensus}%
+              <div className="text-center p-3 bg-slate-50 dark:bg-[#2a2a2a] rounded-lg">
+                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  {voteStatsData.median}
                 </div>
-                <div className={`text-xs ${consensusData.textColor} opacity-70`}>
-                  {consensusData.minVote} - {consensusData.maxVote}
+                <div className="text-xs text-slate-600 dark:text-[#aaaaaa]">
+                  Median
+                </div>
+              </div>
+              
+              <div className="text-center p-3 bg-slate-50 dark:bg-[#2a2a2a] rounded-lg">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {voteStatsData.mostCommon}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-[#aaaaaa]">
+                  Most Common
+                </div>
+              </div>
+              
+              <div className="text-center p-3 bg-slate-50 dark:bg-[#2a2a2a] rounded-lg">
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  {voteStatsData.spread}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-[#aaaaaa]">
+                  Spread
                 </div>
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="mt-3">
-              <div className="flex justify-between text-xs mb-1">
-                <span className={consensusData.textColor}>Low</span>
-                <span className={consensusData.textColor}>High</span>
+            {/* Quick Insights */}
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div className="text-sm text-blue-800 dark:text-blue-200">
+                {voteStatsData.spread === 0 ? (
+                  <>� Perfect agreement! Everyone voted {voteStatsData.mostCommon} points.</>
+                ) : voteStatsData.spread <= 2 ? (
+                  <>✅ Strong alignment with only {voteStatsData.spread} point spread. Consider using {voteStatsData.mostCommon} points.</>
+                ) : voteStatsData.spread <= 5 ? (
+                  <>💭 Moderate spread of {voteStatsData.spread} points. The median ({voteStatsData.median}) might be a good compromise.</>
+                ) : (
+                  <>🗣️ Wide spread of {voteStatsData.spread} points detected. Discussion recommended before deciding.</>
+                )}
               </div>
-              <div className="w-full bg-slate-200 dark:bg-[#404040] rounded-full h-2">
-                <div 
-                  className={`h-2 rounded-full transition-all duration-500 ${
-                    consensusData.consensus >= 90 ? 'bg-green-500' :
-                    consensusData.consensus >= 70 ? 'bg-yellow-500' : 'bg-red-500'
-                  }`}
-                  style={{ width: `${consensusData.consensus}%` }}
-                ></div>
-              </div>
-            </div>
-
-            {/* Consensus Tips */}
-            <div className={`mt-3 text-xs ${consensusData.textColor} opacity-80`}>
-              {consensusData.consensus >= 90 ? (
-                "🎉 Great alignment! The team is in strong agreement."
-              ) : consensusData.consensus >= 70 ? (
-                "💭 Moderate consensus. Consider discussing the differences briefly."
-              ) : (
-                "🗣️ Low consensus detected. Time for discussion before deciding!"
-              )}
             </div>
           </div>
         )}        {/* Voting Cards */}

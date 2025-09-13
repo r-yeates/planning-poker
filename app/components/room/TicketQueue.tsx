@@ -37,7 +37,7 @@ export default function TicketQueue({
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
 
   // Helper to get completed and active tickets
-  const activeTickets = useMemo(() => (room.ticketQueue || []), [room.ticketQueue]);
+  // const activeTickets = useMemo(() => (room.ticketQueue || []), [room.ticketQueue]);
 
   // Filter and sort tickets
   const filteredAndSortedTickets = useMemo(() => {

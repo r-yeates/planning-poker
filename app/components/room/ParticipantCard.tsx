@@ -14,7 +14,6 @@ interface ParticipantCardProps {
   isAdmin: boolean;
   votesRevealed: boolean;
   anonymousVoting: boolean;
-  averageVote?: number;
   onKick: (participantId: string) => void;
   onMakeHost?: (participantId: string) => void;
   isHost: boolean;
@@ -28,7 +27,6 @@ export default function ParticipantCard({
   isAdmin,
   votesRevealed,
   anonymousVoting,
-  averageVote,
   onKick,
   onMakeHost
 }: ParticipantCardProps) {
@@ -56,16 +54,9 @@ export default function ParticipantCard({
     
     if (votesRevealed && vote !== undefined) {
       const voteValue = typeof vote === 'string' ? vote : vote.toString();
-      const isCloseToAverage = averageVote && 
-        typeof vote === 'number' && 
-        Math.abs(vote - averageVote) <= 1;
       
       return (
-        <div className={`text-sm font-bold ${
-          isCloseToAverage 
-            ? 'text-green-600 dark:text-green-400' 
-            : 'text-orange-600 dark:text-orange-400'
-        }`}>
+        <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
           {voteValue}
         </div>
       );

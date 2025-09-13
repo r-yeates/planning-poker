@@ -328,7 +328,7 @@ export default function HomePage() {
       "Real-time collaborative estimation",
       "Anonymous voting options",
       "Multiple estimation scales (Fibonacci, T-Shirt, Powers of Two)",
-      "Team consensus analysis",
+      "Team vote distribution analysis",
       "Room templates for different scenarios",
       "No signup required",
       "Mobile responsive design",
@@ -624,7 +624,7 @@ export default function HomePage() {
         </nav>
 
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-br from-slate-50 via-white to-slate-100/30 dark:from-[#0f0f0f] dark:via-[#181818] dark:to-[#212121] overflow-hidden pt-24 md:pt-6">
+        <section className="relative bg-gradient-to-br from-slate-50 via-white to-slate-100/30 dark:from-[#0f0f0f] dark:via-[#181818] dark:to-[#212121] overflow-hidden pt-24 md:pt-32">
           {/* Particle System */}
           <div className="absolute inset-0 z-0 overflow-hidden">
             {particles.map((particle) => (
@@ -759,7 +759,7 @@ export default function HomePage() {
                   darkBorderColor: '[#404040]',
                   darkTextColor: '[#f1f1f1]'
                 }
-              ].map((template, index) => (
+              ].map((template) => (
                 <div key={template.id} className="group relative">
                   <button
                     onClick={() => createRoomWithTemplate(template.id)}
@@ -949,8 +949,8 @@ export default function HomePage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
                     ),
-                    title: 'Rapid Consensus Building',
-                    description: 'Eliminate lengthy discussions with simultaneous voting that prevents cognitive bias and anchoring effects.',
+                    title: 'Smart Voting Analytics',
+                    description: 'See instant vote distribution charts with statistics to make data-driven estimation decisions.',
                     color: 'from-[#3b82f6] to-[#8b5cf6]'
                   },
                   {
