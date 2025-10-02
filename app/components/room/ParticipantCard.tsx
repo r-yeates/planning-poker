@@ -1,5 +1,7 @@
 'use client';
 
+import { memo } from 'react';
+
 interface ParticipantCardProps {
   participantId: string;
   participant: {
@@ -17,7 +19,7 @@ interface ParticipantCardProps {
   isHost: boolean;
 }
 
-export default function ParticipantCard({
+const ParticipantCard = ({
   participantId,
   participant,
   vote,
@@ -27,7 +29,7 @@ export default function ParticipantCard({
   anonymousVoting,
   onKick,
   onMakeHost
-}: ParticipantCardProps) {
+}: ParticipantCardProps) => {
   const hasVoted = vote !== undefined;
     // Determine border color based on voting status
   const getBorderColor = () => {
@@ -149,3 +151,5 @@ export default function ParticipantCard({
     </div>
   );
 }
+
+export default memo(ParticipantCard);

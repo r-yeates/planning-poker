@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Room } from '@/lib/firebase';
@@ -12,7 +12,7 @@ interface VotingTimerProps {
   compact?: boolean;
 }
 
-export default function VotingTimer({ room, roomId, isAdmin, compact = false }: VotingTimerProps) {
+const VotingTimer = ({ room, roomId, isAdmin, compact = false }: VotingTimerProps) => {
   const [timeInput, setTimeInput] = useState('5');
   const [remainingTime, setRemainingTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);  const [showControls, setShowControls] = useState(false);
@@ -528,3 +528,5 @@ export default function VotingTimer({ room, roomId, isAdmin, compact = false }: 
     </div>
   );
 }
+
+export default memo(VotingTimer);

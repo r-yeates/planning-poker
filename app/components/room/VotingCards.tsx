@@ -1,5 +1,7 @@
 'use client';
 
+import { memo } from 'react';
+
 import { ESTIMATION_SCALES, SCALE_TOOLTIPS } from '@/lib/estimation-scales';
 import type { Room } from '@/lib/firebase';
 
@@ -10,12 +12,12 @@ interface VotingCardsProps {
   onVote: (value: number | string) => void;
 }
 
-export default function VotingCards({
+const VotingCards = ({
   room,
   userId,
   selectedCard,
   onVote
-}: VotingCardsProps) {
+}: VotingCardsProps) => {
   // Check if user is spectator
   const isSpectator = userId && room?.participants[userId]?.role === 'spectator';
 
@@ -70,3 +72,5 @@ export default function VotingCards({
     </div>
   );
 }
+
+export default memo(VotingCards);

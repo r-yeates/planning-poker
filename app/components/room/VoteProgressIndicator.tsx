@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import type { Room } from '@/lib/firebase';
 
 interface VoteProgressIndicatorProps {
@@ -10,12 +10,12 @@ interface VoteProgressIndicatorProps {
   compact?: boolean;
 }
 
-export default function VoteProgressIndicator({
+const VoteProgressIndicator = ({
   room,
   className = '',
   showDetails = true,
   compact = false
-}: VoteProgressIndicatorProps) {
+}: VoteProgressIndicatorProps) => {
   // Round timer state
   const roundStartTimeRef = useRef<number | null>(null);
   const [roundElapsedTime, setRoundElapsedTime] = useState(0);
@@ -226,3 +226,5 @@ export default function VoteProgressIndicator({
     </div>
   );
 }
+
+export default memo(VoteProgressIndicator);

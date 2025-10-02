@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Room, TicketItem } from '@/lib/firebase';
@@ -13,12 +13,12 @@ interface TicketQueueProps {
   isAdmin: boolean;
 }
 
-export default function TicketQueue({
+const TicketQueue = ({
   room,
   roomId,
   userId,
   isAdmin
-}: TicketQueueProps) {
+}: TicketQueueProps) => {
   const [isAddingTicket, setIsAddingTicket] = useState(false);
   const [newTicketTitle, setNewTicketTitle] = useState('');
   const [newTicketDescription, setNewTicketDescription] = useState('');
@@ -547,3 +547,5 @@ export default function TicketQueue({
     </div>
   );
 }
+
+export default memo(TicketQueue);
