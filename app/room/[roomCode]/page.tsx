@@ -3,9 +3,9 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
-import { doc, onSnapshot, updateDoc, deleteDoc, deleteField, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, deleteDoc, deleteField } from 'firebase/firestore';
 import { db, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
-import { trackParticipantJoinedSafe, trackVoteCastSafe, trackVotingRoundCompletedSafe, trackRoomClosedSafe } from '@/lib/analytics-buffer';
+
 import type { Room } from '@/lib/firebase';
 import { ESTIMATION_SCALES, type ScaleType } from '@/lib/estimation-scales';
 
@@ -18,6 +18,7 @@ import KeyboardShortcuts from '@/app/components/room/KeyboardShortcuts';
 import { triggerVoteRevealConfetti } from '@/app/components/room/ConfettiCelebration';
 import TicketQueue from '@/app/components/room/TicketQueue';
 import VotingTimer from '@/app/components/room/VotingTimer';
+
 
 export default function RoomPage() {
   const { roomCode } = useParams();
@@ -40,170 +41,7 @@ export default function RoomPage() {
   const [isLeavingRoom, setIsLeavingRoom] = useState(false);
   const [isRoomSettingsCollapsed, setIsRoomSettingsCollapsed] = useState(true);
 
-  // Activity tracking
-  const updateParticipantActivity = useCallback(async () => {
-    if (!roomId || !userId || !hasJoined) return;
-    
-    try {
-      const docRef = doc(db, 'rooms', roomId);
-      await updateDoc(docRef, {
-        [`participants.${userId}.lastActivity`]: new Date(),
-        [`participants.${userId}.status`]: 'active'
-      });
-    } catch (error) {
-      console.error('Error updating participant activity:', error);
-    }
-  }, [roomId, userId, hasJoined]);
-
-  // Track user activity (mouse move, key press, clicks)
-  useEffect(() => {
-    if (!hasJoined) return;
-
-    const handleActivity = () => {
-      updateParticipantActivity();
-    };
-
-    // Update activity every 30 seconds while user is active
-    const activityInterval = setInterval(handleActivity, 30000);
-
-    // Listen for user activity events
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    events.forEach(event => {
-      document.addEventListener(event, handleActivity, { passive: true });
-    });
-
-    // Initial activity update
-    handleActivity();
-
-    return () => {
-      clearInterval(activityInterval);
-      events.forEach(event => {
-        document.removeEventListener(event, handleActivity);
-      });
-    };
-  }, [hasJoined, updateParticipantActivity]);
-
-  // Update participant status based on activity (runs every minute)
-  useEffect(() => {
-    if (!roomId || !hasJoined) return;
-
-    const updateStatuses = async () => {
-      // Get the current room data directly from Firestore to avoid stale state
-      try {
-        const roomDoc = doc(db, 'rooms', roomId);
-        const roomSnapshot = await getDoc(roomDoc);
-        if (!roomSnapshot.exists()) return;
-        
-        const currentRoom = roomSnapshot.data() as Room;
-        const now = new Date();
-        const updates: Record<string, string> = {};
-        
-        Object.entries(currentRoom.participants).forEach(([id, participant]) => {
-          if (!participant.lastActivity) return;
-          
-          const lastActivity = new Date(participant.lastActivity);
-          const minutesSinceActivity = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60));
-          
-          let newStatus: 'active' | 'idle' | 'disconnected';
-          if (minutesSinceActivity < 2) newStatus = 'active';
-          else if (minutesSinceActivity < 10) newStatus = 'idle';
-          else newStatus = 'disconnected';
-          
-          if (participant.status !== newStatus) {
-            updates[`participants.${id}.status`] = newStatus;
-          }
-        });
-
-        if (Object.keys(updates).length > 0) {
-          await updateDoc(roomDoc, updates);
-        }
-      } catch (error) {
-        console.error('Error updating participant statuses:', error);
-      }
-    };
-
-    const statusInterval = setInterval(updateStatuses, 60000); // Check every minute
-    return () => clearInterval(statusInterval);
-  }, [roomId, hasJoined]);
-
-  // Clean up disconnected participants (runs every 5 minutes)
-  useEffect(() => {
-    if (!roomId || !hasJoined) return;
-
-    const cleanupDisconnectedUsers = async () => {
-      try {
-        // Get fresh room data to avoid stale state
-        const roomDoc = doc(db, 'rooms', roomId);
-        const roomSnapshot = await getDoc(roomDoc);
-        if (!roomSnapshot.exists()) return;
-        
-        const currentRoom = roomSnapshot.data() as Room;
-        const now = new Date();
-        const participantEntries = Object.entries(currentRoom.participants);
-        
-        // Find participants who have been disconnected for more than 15 minutes
-        const disconnectedParticipants = participantEntries.filter(([, participant]) => {
-          if (!participant.lastActivity) return false;
-          
-          const lastActivity = new Date(participant.lastActivity);
-          const minutesSinceActivity = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60));
-          
-          return minutesSinceActivity > 15; // 15 minutes threshold
-        });
-
-        if (disconnectedParticipants.length === 0) return;
-
-        console.log(`Cleaning up ${disconnectedParticipants.length} disconnected participants`);
-
-        // Remove disconnected participants and their votes
-        const updates: Record<string, ReturnType<typeof deleteField> | boolean> = {};
-        const disconnectedIds = disconnectedParticipants.map(([id]) => id);
-        
-        disconnectedIds.forEach(id => {
-          updates[`participants.${id}`] = deleteField();
-          if (currentRoom.votes?.[id]) {
-            updates[`votes.${id}`] = deleteField();
-          }
-        });
-
-        // Check if any remaining participants exist
-        const remainingParticipants = participantEntries.filter(([id]) => !disconnectedIds.includes(id));
-        
-        if (remainingParticipants.length === 0) {
-          // If no participants left, delete the entire room
-          await deleteDoc(roomDoc);
-          await trackRoomClosedSafe();
-          console.log('Room deleted - no active participants remaining');
-        } else {
-          // Check if we need to assign a new host
-          const wasHostDisconnected = disconnectedParticipants.some(([, participant]) => participant.isHost);
-          
-          if (wasHostDisconnected) {
-            // Find a new host from remaining participants
-            const newHostId = remainingParticipants[0][0];
-            updates[`participants.${newHostId}.isHost`] = true;
-            console.log(`Assigned new host: ${newHostId}`);
-          }
-
-          await updateDoc(roomDoc, updates);
-          console.log('Cleaned up disconnected participants');
-        }
-      } catch (error) {
-        console.error('Error cleaning up disconnected participants:', error);
-      }
-    };
-
-    // Run cleanup every 5 minutes
-    const cleanupInterval = setInterval(cleanupDisconnectedUsers, 5 * 60 * 1000);
-    
-    // Also run cleanup on component mount (after a short delay)
-    const initialCleanupTimeout = setTimeout(cleanupDisconnectedUsers, 10000);
-    
-    return () => {
-      clearInterval(cleanupInterval);
-      clearTimeout(initialCleanupTimeout);
-    };
-  }, [roomId, hasJoined]);
+  
 
   // Initialize userId from localStorage
   useEffect(() => {
@@ -222,7 +60,7 @@ export default function RoomPage() {
     if (!room.participants[userId]) {
       console.log('User was kicked from room, redirecting to home');
       router.push('/');
-    }  }, [room, userId, wasInRoom, router]);
+    }  }, [room?.participants, userId, wasInRoom, router]);
 
   // Look up room by code and set up room listener
   useEffect(() => {
@@ -285,7 +123,7 @@ export default function RoomPage() {
   // Memoized admin status
   const isAdmin = useMemo(() => {
     return room && userId ? (room.participants[userId]?.isHost || false) : false;
-  }, [room, userId]);
+  }, [room?.participants, userId]);
   // Handle participant status changes
   useEffect(() => {
     if (!room || !userId) return;
@@ -314,7 +152,7 @@ export default function RoomPage() {
         setHasJoined(false);
       }
     }
-  }, [room, userId, roomCode]);
+  }, [room?.participants, userId, roomCode]);
 
   // Check if Web Share API is available
   useEffect(() => {
@@ -365,7 +203,7 @@ export default function RoomPage() {
     
     // Update previous state for next comparison
     setPreviousRoundState(currentState);
-  }, [room?.votesRevealed, room?.votes, hasJoined, showNewRoundNotification, room, previousRoundState]);
+  }, [room?.votesRevealed, room?.votes, hasJoined, showNewRoundNotification, previousRoundState]);
   // Sync selected card with user's vote in database
   useEffect(() => {
     if (!room || !userId) return;
@@ -380,7 +218,7 @@ export default function RoomPage() {
       console.log('User vote cleared, clearing selected card');
       setSelectedCard(null);
     }
-  }, [room?.votes, userId, selectedCard, room]);
+  }, [room?.votes, userId, selectedCard]);
   // Clear selected card when votes are reset (new round)
   useEffect(() => {
     // If room exists and votes object is empty (reset), clear selected card
@@ -388,7 +226,7 @@ export default function RoomPage() {
       console.log('Votes were cleared, resetting selected card');
       setSelectedCard(null);
     }
-  }, [room?.votes, selectedCard, room]);
+  }, [room?.votes, selectedCard]);
   // Auto-reveal votes when all players have voted (if enabled)
   useEffect(() => {
     console.log('Auto-reveal effect triggered:', {
@@ -451,7 +289,7 @@ export default function RoomPage() {
     } else {
       console.log('Not all voters have voted yet, waiting...');
     }
-  }, [room?.votes, room?.participants, room?.votesRevealed, room?.autoReveal, roomId, room]);
+  }, [room?.votes, room?.participants, room?.votesRevealed, room?.autoReveal, roomId]);
 
   // Function to copy room link to clipboard
   const copyRoomLink = async () => {
@@ -508,12 +346,10 @@ export default function RoomPage() {
       // Check if this is the first vote and auto-lock room if enabled
       const updateData: Record<string, import('firebase/firestore').FieldValue | object | string | number | boolean | undefined> = {
         [`votes.${userId}`]: { value },
-        [`participants.${userId}.lastActivity`]: new Date(),
-        [`participants.${userId}.status`]: 'active'
       };
       await updateDoc(docRef, updateData);
       // Track analytics
-      await trackVoteCastSafe();
+      
     } catch (error) {
       console.error('Error voting:', error);
     }
@@ -594,13 +430,11 @@ export default function RoomPage() {
           name: name,
           isHost: isFirstParticipant, // First person becomes the host
           role: 'voter',
-          lastActivity: new Date(),
-          status: 'active'
         }
       });      console.log('Successfully joined room');
       
       // Track analytics
-      await trackParticipantJoinedSafe();
+      
         localStorage.setItem('userName', name);
       setHasJoined(true);
       setWasInRoom(true); // Track that user joined the room
@@ -611,7 +445,7 @@ export default function RoomPage() {
     } finally {
       setJoining(false);
     }
-  }, [userId, roomId, room]);
+  }, [userId, roomId, room?.password, room?.participants, room?.isLocked, room?.roomCode]);
 
   const handleKickParticipant = async (participantId: string) => {
     if (!room || !roomId || !isAdmin) return;
@@ -668,7 +502,7 @@ export default function RoomPage() {
       }
       
       // Track analytics - voting round completed
-      await trackVotingRoundCompletedSafe();
+      
     } catch (error) {
       console.error('Error revealing votes:', error);
     }
@@ -745,7 +579,7 @@ export default function RoomPage() {
       if (Object.keys(remainingParticipants).length === 0) {
         await deleteDoc(docRef);
         // Track analytics - room closed
-        await trackRoomClosedSafe();
+        
       } else {
         // Check if the leaving user was the host
         if (room.participants[userId].isHost) {
@@ -844,7 +678,7 @@ export default function RoomPage() {
         console.log('Auto-joining user from home page...');
         handleNameSubmit(userName);
       }
-    }  }, [room, roomId, userId, showNamePrompt, hasJoined, handleNameSubmit]);
+    }  }, [room?.participants, roomId, userId, showNamePrompt, hasJoined, handleNameSubmit]);
   // Calculate voting stats excluding spectators
   const votersOnly = Object.entries(room?.participants || {}).filter(([, participant]) => 
     participant.role !== 'spectator'

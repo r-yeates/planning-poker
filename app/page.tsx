@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { addDoc, collection } from 'firebase/firestore';
 import { db, generateUniqueRoomCode, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
-import { trackRoomCreatedSafe } from '@/lib/analytics-buffer';
 import { type ScaleType } from '@/lib/estimation-scales';
 import ThemeToggle from './components/global/ThemeToggle';
 import Link from 'next/link';
@@ -194,9 +193,6 @@ export default function HomePage() {
       
       await addDoc(collection(db, 'rooms'), roomData);
 
-      // Track analytics
-      await trackRoomCreatedSafe();
-
       // Set verification flag for auto-join
       sessionStorage.setItem('roomJoinVerified', roomCode);
 
@@ -249,9 +245,6 @@ export default function HomePage() {
       }
       
       await addDoc(collection(db, 'rooms'), roomData);
-
-      // Track analytics
-      await trackRoomCreatedSafe();
 
       // Set verification flag for auto-join and mark as room creator
       sessionStorage.setItem('roomJoinVerified', roomCode);

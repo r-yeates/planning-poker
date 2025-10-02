@@ -6,8 +6,6 @@ interface ParticipantCardProps {
     name: string;
     isHost: boolean;
     role: 'voter' | 'spectator' | 'admin';
-    lastActivity?: Date;
-    status?: 'active' | 'idle' | 'disconnected';
   };
   vote?: string | number;
   isCurrentUser: boolean;
@@ -88,42 +86,6 @@ export default function ParticipantCard({
     return colors[index];
   };
 
-  // Helper to get status from lastActivity
-  const getParticipantStatus = () => {
-    if (isCurrentUser) return 'active'; // Current user is always active
-    if (participant.status) return participant.status;
-    
-    // Calculate status from lastActivity if no explicit status
-    if (!participant.lastActivity) return 'disconnected';
-    
-    const now = new Date();
-    const lastActivity = new Date(participant.lastActivity);
-    const minutesSinceActivity = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60));
-    
-    if (minutesSinceActivity < 2) return 'active';
-    if (minutesSinceActivity < 10) return 'idle';
-    return 'disconnected';
-  };
-
-  // Helper to get status indicator
-  const getStatusIndicator = () => {
-    const status = getParticipantStatus();
-    const statusConfig = {
-      active: { color: 'bg-green-400', label: 'Active' },
-      idle: { color: 'bg-yellow-400', label: 'Idle' },
-      disconnected: { color: 'bg-gray-400', label: 'Disconnected' }
-    };
-    
-    const config = statusConfig[status];
-    
-    return (
-      <div 
-        className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-[#212121] ${config.color}`}
-        title={config.label}
-      />
-    );
-  };
-
   return (
     <div className={`bg-white dark:bg-[#212121] rounded-lg border p-3 transition-all hover:shadow-md group ${getBorderColor()}`}>
       <div className="flex items-start justify-between">
@@ -136,8 +98,6 @@ export default function ParticipantCard({
             >
               {anonymousVoting && !votesRevealed ? '?' : getInitials(participant.name)}
             </span>
-            {/* Status Indicator */}
-            {getStatusIndicator()}
           </div>
           <div className="min-w-0">
             <div className="text-base font-bold text-gray-900 dark:text-white">
