@@ -96,14 +96,14 @@ const ParticipantCard = ({
           <div className="relative">
             <span
               className={`flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-sm select-none shadow ${getAvatarColor(participantId)}`}
-              aria-label={`Avatar for ${participant.name}`}
+              aria-label={anonymousVoting ? 'Anonymous participant' : `Avatar for ${participant.name}`}
             >
-              {anonymousVoting && !votesRevealed ? '?' : getInitials(participant.name)}
+              {anonymousVoting ? '?' : getInitials(participant.name)}
             </span>
           </div>
           <div className="min-w-0">
             <div className="text-base font-bold text-gray-900 dark:text-white">
-              {anonymousVoting && !votesRevealed 
+              {anonymousVoting 
                 ? 'Anonymous' 
                 : participant.name
               }
