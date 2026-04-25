@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { addDoc, collection } from 'firebase/firestore';
-import { db, generateUniqueRoomCode, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
+import { db, generateUniqueRoomCode, getRoomByCode, ensureAnonymousAuth } from '@/lib/firebase';
 import { type ScaleType } from '@/lib/estimation-scales';
 import ThemeToggle from './components/global/ThemeToggle';
 import Link from 'next/link';
@@ -148,34 +148,30 @@ export default function HomePage() {
   }, [lastScrollY]);
 
   // Memoize callback functions for better performance
-  const ensureUserId = useCallback(() => {
-    let userId = localStorage.getItem('userId');
-    if (!userId) {
-      userId = Math.random().toString(36).substring(2);
-      localStorage.setItem('userId', userId);
-    }
-    return userId;
+  const ensureUserId = useCallback(async () => {
+    const uid = await ensureAnonymousAuth();
+    localStorage.setItem('userId', uid);
+    return uid;
   }, []);
 
   const createRoom = async () => {
     setError('');
     setIsCreating(true);
     try {
-      ensureUserId();
+      await ensureUserId();
 
       const roomCode = await generateUniqueRoomCode();
       const roomData: Record<string, unknown> = {
         roomCode,
-        participants: {}, // Start with empty participants - user will be added when they enter their name
+        participants: {},
         votes: {},
         votesRevealed: false,
-        autoReveal: false, // Default to auto-reveal disabled
-        anonymousVoting: false, // Default to non-anonymous voting
-        showTooltips: false, // Default to tooltips disabled
-        confettiEnabled: false, // Always set confetti to false on room creation
+        autoReveal: false,
+        anonymousVoting: false,
+        showTooltips: false,
+        confettiEnabled: false,
         currentTicket: '',
-        ticketQueue: [], // Start with empty ticket queue
-        scaleType: 'fibonacci', // Default to fibonacci, admins can change it later
+        scaleType: 'fibonacci',
         createdAt: new Date(),
         timer: {
           startTime: null,
@@ -183,19 +179,26 @@ export default function HomePage() {
           isRunning: false
         },
         roundHistory: [],
-        isTicketQueueCollapsed: true, // Always collapse ticket queue on room creation
       };
-      
-      // Add password if provided
+
+      // Store hasPassword flag (not the plaintext password)
       if (roomPassword.trim()) {
-        roomData.password = roomPassword.trim();
+        roomData.hasPassword = true;
       }
-      
-      await addDoc(collection(db, 'rooms'), roomData);
 
-      // Set verification flag for auto-join
+      const docRef = await addDoc(collection(db, 'rooms'), roomData);
+
+      // Store the password hash server-side
+      if (roomPassword.trim()) {
+        await fetch('/api/set-room-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId: docRef.id, password: roomPassword.trim() }),
+        });
+      }
+
       sessionStorage.setItem('roomJoinVerified', roomCode);
-
+      sessionStorage.setItem('roomCreator', roomCode);
       router.push(`/room/${roomCode}`);
     } catch (error) {
       console.error('Error creating room:', error);
@@ -214,20 +217,19 @@ export default function HomePage() {
     setError('');
     setIsCreating(true);
     try {
-      ensureUserId();
+      await ensureUserId();
 
       const roomCode = await generateUniqueRoomCode();
       const roomData: Record<string, unknown> = {
         roomCode,
-        participants: {}, // Start with empty participants - user will be added when they enter their name
+        participants: {},
         votes: {},
         votesRevealed: false,
         autoReveal: template.autoReveal,
         anonymousVoting: template.anonymousVoting,
         showTooltips: template.showTooltips,
-        confettiEnabled: false, // Always set confetti to false on room creation
+        confettiEnabled: false,
         currentTicket: '',
-        ticketQueue: [], // Start with empty ticket queue
         scaleType: template.scaleType,
         createdAt: new Date(),
         timer: {
@@ -236,20 +238,24 @@ export default function HomePage() {
           isRunning: false
         },
         roundHistory: [],
-        isTicketQueueCollapsed: true, // Always collapse ticket queue on room creation
       };
-      
-      // Add password if provided (templates don't include passwords by default)
+
       if (roomPassword.trim()) {
-        roomData.password = roomPassword.trim();
+        roomData.hasPassword = true;
       }
-      
-      await addDoc(collection(db, 'rooms'), roomData);
 
-      // Set verification flag for auto-join and mark as room creator
+      const docRef = await addDoc(collection(db, 'rooms'), roomData);
+
+      if (roomPassword.trim()) {
+        await fetch('/api/set-room-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId: docRef.id, password: roomPassword.trim() }),
+        });
+      }
+
       sessionStorage.setItem('roomJoinVerified', roomCode);
-      sessionStorage.setItem('roomCreator', roomCode); // Mark this user as the creator
-
+      sessionStorage.setItem('roomCreator', roomCode);
       router.push(`/room/${roomCode}`);
     } catch (error) {
       console.error('Error creating room with template:', error);
@@ -278,9 +284,14 @@ export default function HomePage() {
       }
 
       // Check password if room is password-protected
-      if (roomData.password) {
-        const isPasswordValid = await verifyRoomPassword(normalizedCode, joinPassword);
-        if (!isPasswordValid) {
+      if (roomData.hasPassword) {
+        const res = await fetch('/api/verify-room-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomCode: normalizedCode, password: joinPassword }),
+        });
+        const data = await res.json() as { valid?: boolean };
+        if (!data.valid) {
           setError('Incorrect password. Please check the password and try again.');
           setIsJoining(false);
           return;
@@ -288,10 +299,14 @@ export default function HomePage() {
       }
 
       // Store user info and redirect
-      ensureUserId();
+      await ensureUserId();
       
       // Set verification flag for auto-join
       sessionStorage.setItem('roomJoinVerified', normalizedCode);
+      // Password was already verified on this page — skip re-check on room page
+      if (roomData.hasPassword) {
+        sessionStorage.setItem('roomPasswordVerified', normalizedCode);
+      }
       
       router.push(`/room/${normalizedCode}`);
     } catch (error) {

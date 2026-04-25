@@ -10,10 +10,14 @@
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
+    "@opentelemetry/api": "^1.9.1",
     "@tailwindcss/typography": "^0.5.16",
     "canvas-confetti": "^1.9.3",
     "firebase": "^11.9.1",
+    "firebase-admin": "^13.8.0",
+    "lint": "^1.2.2",
     "next": "^16.1.6",
+    "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

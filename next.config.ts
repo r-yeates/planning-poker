@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // firebase-admin must run in Node.js — prevent Next.js from bundling it
+  serverExternalPackages: ['firebase-admin', 'firebase-admin/app', 'firebase-admin/firestore', '@google-cloud/firestore', '@opentelemetry/api'],
+
   // Output configuration for static export if needed
   // output: 'export', // Uncomment if you want static export
   

@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { doc, onSnapshot, updateDoc, deleteDoc, deleteField } from 'firebase/firestore';
-import { db, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
+import { db, getRoomByCode, ensureAnonymousAuth } from '@/lib/firebase';
 
 import type { Room } from '@/lib/firebase';
 import { ESTIMATION_SCALES, type ScaleType } from '@/lib/estimation-scales';
@@ -16,8 +16,9 @@ import VotingCards from '@/app/components/room/VotingCards';
 import VoteProgressIndicator from '@/app/components/room/VoteProgressIndicator';
 import KeyboardShortcuts from '@/app/components/room/KeyboardShortcuts';
 import { triggerVoteRevealConfetti } from '@/app/components/room/ConfettiCelebration';
-import TicketQueue from '@/app/components/room/TicketQueue';
 import VotingTimer from '@/app/components/room/VotingTimer';
+import ShareRoomModal from '@/app/components/room/ShareRoomModal';
+import RoomChat from '@/app/components/room/RoomChat';
 
 
 export default function RoomPage() {
@@ -28,6 +29,7 @@ export default function RoomPage() {
   const [room, setRoom] = useState<Room | null>(null);
   const [selectedCard, setSelectedCard] = useState<number | string | null>(null);  const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [joining, setJoining] = useState(false);
   const [canShare, setCanShare] = useState(false);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
@@ -43,22 +45,18 @@ export default function RoomPage() {
 
   
 
-  // Initialize userId from localStorage
+  // Initialize userId via Firebase Anonymous Auth
   useEffect(() => {
-    const storedUserId = localStorage.getItem('userId');
-    if (storedUserId) {
-      setUserId(storedUserId);
-    } else {
-      const newUserId = Math.random().toString(36).substring(2);
-      localStorage.setItem('userId', newUserId);
-      setUserId(newUserId);
-    }  }, []);  // Check if user has been kicked (only after they've joined)
+    ensureAnonymousAuth().then((uid) => {
+      localStorage.setItem('userId', uid);
+      setUserId(uid);
+    });
+  }, []);  // Check if user has been kicked (only after they've joined)
   useEffect(() => {
     if (!room || !userId || !wasInRoom) return;
     
     // If user was in room but is no longer a participant, they were kicked
     if (!room.participants[userId]) {
-      console.log('User was kicked from room, redirecting to home');
       router.push('/');
     }  }, [room?.participants, userId, wasInRoom, router]);
 
@@ -113,10 +111,7 @@ export default function RoomPage() {
 
     // Cleanup subscription on unmount
     return () => {
-      if (unsubscribeRef) {
-        console.log('Cleaning up room subscription');
-        unsubscribeRef();
-      }
+      if (unsubscribeRef) unsubscribeRef();
     };
   }, [roomCode, userId]);
 
@@ -142,9 +137,7 @@ export default function RoomPage() {
         setHasJoined(false);
       } else if (isVerified === roomCode) {
         sessionStorage.removeItem('roomJoinVerified');
-        if (isCreator === roomCode) {
-          sessionStorage.removeItem('roomCreator');
-        }
+        // Do NOT remove roomCreator here — handleNameSubmit reads and removes it
         setShowNamePrompt(false);
         setHasJoined(false);
       } else {
@@ -172,9 +165,8 @@ export default function RoomPage() {
                         previousRoundStateRef.current.hasVotes === true &&
                         currentState.votesRevealed === false && 
                         currentState.hasVotes === false;                          if (isNewRound && !showNewRoundNotification) {
-        console.log('New round detected - transition from revealed to reset');
         setShowNewRoundNotification(true);
-        
+
         // Trigger enter animation with a slight delay for smoother effect
         setTimeout(() => {
           setIsNotificationVisible(true);
@@ -197,7 +189,6 @@ export default function RoomPage() {
         currentState.votesRevealed === true && 
         currentState.hasVotes === true && 
         room.confettiEnabled) {
-      console.log('Votes revealed - triggering confetti!');
       triggerVoteRevealConfetti();
     }
     
@@ -210,12 +201,8 @@ export default function RoomPage() {
     
     const userVote = room.votes?.[userId];
     if (userVote && selectedCard !== userVote.value) {
-      // User has voted but local state doesn't reflect it
-      console.log('Syncing selected card with database vote:', userVote.value);
       setSelectedCard(userVote.value);
     } else if (!userVote && selectedCard !== null) {
-      // User's vote was cleared but local state still shows selection
-      console.log('User vote cleared, clearing selected card');
       setSelectedCard(null);
     }
   }, [room?.votes, userId, selectedCard]);
@@ -223,32 +210,15 @@ export default function RoomPage() {
   useEffect(() => {
     // If room exists and votes object is empty (reset), clear selected card
     if (room && Object.keys(room.votes || {}).length === 0 && selectedCard !== null) {
-      console.log('Votes were cleared, resetting selected card');
       setSelectedCard(null);
     }
   }, [room?.votes, selectedCard]);
   // Auto-reveal votes when all players have voted (if enabled)
   useEffect(() => {
-    console.log('Auto-reveal effect triggered:', {
-      hasRoom: !!room,
-      hasRoomId: !!roomId,
-      votesRevealed: room?.votesRevealed,
-      autoReveal: room?.autoReveal,
-      autoRevealType: typeof room?.autoReveal
-    });
+    if (!room || !roomId || room.votesRevealed) return;
     
-    if (!room || !roomId || room.votesRevealed) {
-      console.log('Early return: missing room data or votes already revealed');
-      return;
-    }
-    
-    // Explicitly check autoReveal property - default to false if undefined
     const autoRevealEnabled = room.autoReveal === true;
-    console.log('Auto-reveal enabled check:', autoRevealEnabled, 'raw value:', room.autoReveal);
-      if (!autoRevealEnabled) {
-      console.log('Auto-reveal is disabled, skipping auto-reveal');
-      return;
-    }
+    if (!autoRevealEnabled) return;
     
     // Use corrected voter counting logic (exclude spectators)
     const votersOnly = Object.entries(room.participants).filter(([, participant]) => 
@@ -258,36 +228,15 @@ export default function RoomPage() {
     const votedIds = Object.keys(room.votes || {});
     const votersWhoVoted = voterIds.filter(id => votedIds.includes(id));
     
-    console.log('Auto-reveal voting status:', {
-      totalVoters: voterIds.length,
-      votedCount: votersWhoVoted.length,
-      voterIds,
-      votedIds: votedIds
-    });
-    
-    // Check if all voters (excluding spectators) have voted
     if (voterIds.length > 0 && votersWhoVoted.length === voterIds.length) {
-      console.log('All voters voted and auto-reveal is enabled, setting timer to reveal votes...');
-      // Auto-reveal after a short delay to allow for UI updates
       const timer = setTimeout(async () => {
-        console.log('Executing auto-reveal...');
         try {
-          const docRef = doc(db, 'rooms', roomId);
-          await updateDoc(docRef, {
-            votesRevealed: true
-          });
-          console.log('Auto-reveal completed successfully');
+          await updateDoc(doc(db, 'rooms', roomId), { votesRevealed: true });
         } catch (error) {
           console.error('Error auto-revealing votes:', error);
         }
       }, 1000);
-      
-      return () => {
-        console.log('Clearing auto-reveal timer');
-        clearTimeout(timer);
-      };
-    } else {
-      console.log('Not all voters have voted yet, waiting...');
+      return () => clearTimeout(timer);
     }
   }, [room?.votes, room?.participants, room?.votesRevealed, room?.autoReveal, roomId]);
 
@@ -356,24 +305,13 @@ export default function RoomPage() {
   };
 
   const handleNameSubmit = useCallback(async (name: string, password?: string) => {
-    console.log('🚀 handleNameSubmit called:', { 
-      name, 
-      hasPassword: !!password, 
-      roomHasPassword: !!room?.password,
-      userId, 
-      roomId, 
-      hasRoom: !!room 
-    });
-    
     if (!userId || !roomId || !room) {
-      console.error('❌ Missing required data:', { userId, roomId, hasRoom: !!room });
       setError('Unable to join room. Please try again.');
       return;
     }
 
     // Double check user isn't already a participant
     if (room.participants[userId]) {
-      console.log('ℹ️ User already in room during name submit');
       setHasJoined(true);
       setShowNamePrompt(false);
       return;
@@ -382,44 +320,42 @@ export default function RoomPage() {
     // Check if room is locked (unless user is the creator)
     const isCreator = sessionStorage.getItem('roomCreator') === room.roomCode;
     if (room.isLocked && !isCreator) {
-      console.log('🔒 Room is locked, preventing new participant from joining');
       setError('This room is locked and not accepting new participants.');
       return;
     }
 
-    // Check password if room is password-protected (unless user is the creator)
-    if (room.password && !isCreator) {
-      console.log('🔒 Room is password protected, checking password...');
+    // Check password if room is password-protected (unless creator or already verified)
+    const isPasswordVerified = sessionStorage.getItem('roomPasswordVerified') === room.roomCode;
+    if (isPasswordVerified) {
+      sessionStorage.removeItem('roomPasswordVerified');
+    }
+    if (room.hasPassword && !isCreator && !isPasswordVerified) {
       if (!password) {
-        console.log('❌ No password provided for protected room');
         setPasswordError('This room requires a password');
         return;
       }
-      
-      console.log('🔍 Verifying password...');
       try {
-        const isPasswordValid = await verifyRoomPassword(room.roomCode, password);
-        console.log('🔍 Password verification result:', isPasswordValid);
-        if (!isPasswordValid) {
-          console.log('❌ Incorrect password');
+        const res = await fetch('/api/verify-room-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomCode: room.roomCode, password }),
+        });
+        const data = await res.json() as { valid?: boolean };
+        if (!data.valid) {
           setPasswordError('Incorrect password');
           return;
         }
-        console.log('✅ Password verified successfully');
       } catch (error) {
-        console.error('❌ Error verifying password:', error);
+        console.error('Error verifying password:', error);
         setPasswordError('Error verifying password. Please try again.');
         return;
       }
     } else if (isCreator) {
-      console.log('🎉 User is room creator, skipping password check');
-      // Clear the creator flag after first use
       sessionStorage.removeItem('roomCreator');
-    }    console.log('✅ All checks passed, joining room...');
-    setPasswordError(''); // Clear any previous password errors
+    }
+    setPasswordError('');
     setJoining(true);
     try {
-      console.log('Attempting to join room');
       const docRef = doc(db, 'rooms', roomId);
       
       // Check if this is the first person joining the room (should become host)
@@ -431,7 +367,7 @@ export default function RoomPage() {
           isHost: isFirstParticipant, // First person becomes the host
           role: 'voter',
         }
-      });      console.log('Successfully joined room');
+      });
       
       // Track analytics
       
@@ -445,7 +381,7 @@ export default function RoomPage() {
     } finally {
       setJoining(false);
     }
-  }, [userId, roomId, room?.password, room?.participants, room?.isLocked, room?.roomCode]);
+  }, [userId, roomId, room?.hasPassword, room?.participants, room?.isLocked, room?.roomCode]);
 
   const handleKickParticipant = async (participantId: string) => {
     if (!room || !roomId || !isAdmin) return;
@@ -464,6 +400,17 @@ export default function RoomPage() {
     } catch (error) {
       console.error('Error kicking participant:', error);
     }  };
+
+  const handleClearVote = async (participantId: string) => {
+    if (!room || !roomId || !isAdmin) return;
+    try {
+      await updateDoc(doc(db, 'rooms', roomId), {
+        [`votes.${participantId}`]: deleteField(),
+      });
+    } catch (error) {
+      console.error('Error clearing vote:', error);
+    }
+  };
 
   // Function to hand over host role
   const handleMakeHost = async (participantId: string) => {
@@ -515,15 +462,12 @@ export default function RoomPage() {
       const docRef = doc(db, 'rooms', roomId);
       await updateDoc(docRef, {
         votesRevealed: false,
-        votes: {}, // This clears all participant votes
+        votes: {},
         currentTicket: '',
-        isLocked: false // Unlock room for new participants when starting new round
+        isLocked: false
       });
       
-      // Reset local selected card state
       setSelectedCard(null);
-      
-      console.log('Round reset successfully - all votes cleared and room unlocked');
     } catch (error) {
       console.error('Error resetting votes:', error);
     }
@@ -575,30 +519,25 @@ export default function RoomPage() {
       // Note: _removed and _removedVote are intentionally unused as we only need the remaining objects
 
       const docRef = doc(db, 'rooms', roomId);
-        // If this is the last participant, delete the room
+      // If this is the last participant, delete the room
       if (Object.keys(remainingParticipants).length === 0) {
         await deleteDoc(docRef);
-        // Track analytics - room closed
-        
       } else {
-        // Check if the leaving user was the host
+        // Build update using dot-notation deleteField() for own entries
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const leaveUpdate: Record<string, any> = {
+          [`participants.${userId}`]: deleteField(),
+          [`votes.${userId}`]: deleteField(),
+        };
+
+        // If leaving user was host, reassign host to another participant
         if (room.participants[userId].isHost) {
-          // Get remaining participant IDs and randomly select one as the new host
           const remainingParticipantIds = Object.keys(remainingParticipants);
           const newHostId = remainingParticipantIds[Math.floor(Math.random() * remainingParticipantIds.length)];
-          
-          // Update the new host's isHost property
-          remainingParticipants[newHostId] = {
-            ...remainingParticipants[newHostId],
-            isHost: true
-          };
+          leaveUpdate[`participants.${newHostId}.isHost`] = true;
         }
 
-        // Update the room
-        await updateDoc(docRef, {
-          participants: remainingParticipants,
-          votes: remainingVotes
-        });
+        await updateDoc(docRef, leaveUpdate);
       }
       
       // Clean up all state and storage before navigation
@@ -675,7 +614,6 @@ export default function RoomPage() {
     if (room && roomId && userId && !room.participants[userId] && !showNamePrompt && !hasJoined) {
       const userName = localStorage.getItem('userName');
       if (userName) {
-        console.log('Auto-joining user from home page...');
         handleNameSubmit(userName);
       }
     }  }, [room?.participants, roomId, userId, showNamePrompt, hasJoined, handleNameSubmit]);
@@ -715,7 +653,7 @@ export default function RoomPage() {
   }
   if (showNamePrompt) {
     const isCreator = sessionStorage.getItem('roomCreator') === room?.roomCode;
-    const requiresPassword = !!room?.password && !isCreator;
+    const requiresPassword = !!room?.hasPassword && !isCreator;
     
     return (
       <NamePrompt 
@@ -736,6 +674,13 @@ export default function RoomPage() {
       </div>
     );
   }  const votes = Object.entries(room.votes || {});
+
+  // Room age warning (> 24 hours)
+  const createdAtMs = room.createdAt
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? (typeof (room.createdAt as any).toMillis === 'function' ? (room.createdAt as any).toMillis() : new Date(room.createdAt as string | Date).getTime())
+    : 0;
+  const isRoomOld = createdAtMs > 0 && Date.now() - createdAtMs > 24 * 60 * 60 * 1000;
 
   // Calculate vote distribution data
   const voteStatsData = room.votesRevealed && votes.length > 0
@@ -811,15 +756,15 @@ export default function RoomPage() {
             )}
             
             <button
-              onClick={shareRoom}
+              onClick={() => setShowShareModal(true)}
               className="flex items-center gap-2 px-3 py-2 h-10 rounded-lg border bg-white dark:bg-[#212121] border-slate-200 dark:border-[#303030] text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#303030] transition-colors"
-              title="Click to copy room link"
+              title="Invite — show QR code and link"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.213 9.787a3.391 3.391 0 0 0-4.795 0l-3.425 3.426a3.39 3.39 0 0 0 4.795 4.794l.321-.304m-.321-4.49a3.39 3.39 0 0 0 4.795 0l3.424-3.426a3.39 3.39 0 0 0-4.794-4.795l-1.028.961" />
               </svg>
               <span className="text-sm font-mono font-bold">{room?.roomCode}</span>
-              {room?.password && (
+              {room?.hasPassword && (
                 <svg className="w-3 h-3 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
@@ -839,9 +784,8 @@ export default function RoomPage() {
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               ) : (
-                <svg className="w-3 h-3 text-slate-400 dark:text-[#aaaaaa]" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                  <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                <svg className="w-3 h-3 text-slate-400 dark:text-[#aaaaaa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4H8a2 2 0 00-2 2v2M4 12v4a2 2 0 002 2h2M12 20h4a2 2 0 002-2v-2M20 12V8a2 2 0 00-2-2h-2M9 9h1v1H9zM9 14h1v1H9zM14 9h1v1h-1z" />
                 </svg>
               )}
             </button>
@@ -893,6 +837,18 @@ export default function RoomPage() {
           </div>
         </div>
       </div>
+
+      {/* Room age warning */}
+      {isRoomOld && (
+        <div className="max-w-7xl mx-auto mb-4">
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-lg text-sm text-amber-800 dark:text-amber-300">
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            This room is over 24 hours old and may be stale. Consider creating a new room for your session.
+          </div>
+        </div>
+      )}
 
       {/* Body Content - 2 Column Layout */}
       <div className="max-w-7xl mx-auto">        <div className="grid lg:grid-cols-4 gap-6">          {/* Left Column - Voting Info & Participants */}
@@ -1086,6 +1042,17 @@ export default function RoomPage() {
               )}
             </div>
             
+            {/* Chat — visible on desktop in left column; on mobile it sits here in flow */}
+            {/* {hasJoined && roomId && userId && room.participants[userId] && (
+              <div className="hidden lg:block">
+                <RoomChat
+                  roomId={roomId}
+                  userId={userId}
+                  userName={room.participants[userId].name}
+                />
+              </div>
+            )} */}
+
             {/* Participants Section */}
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -1120,6 +1087,7 @@ export default function RoomPage() {
                           anonymousVoting={room.anonymousVoting}
                           onKick={handleKickParticipant}
                           onMakeHost={handleMakeHost}
+                          onClearVote={handleClearVote}
                           isHost={participant.isHost}
                         />
                       );
@@ -1127,13 +1095,6 @@ export default function RoomPage() {
               </div>
             </div>
             
-            {/* Ticket Queue Section */}
-            <TicketQueue
-              room={room}
-              roomId={roomId || ''}
-              userId={userId}
-              isAdmin={isAdmin}
-            />
           </div>
 
           {/* Right Column - Game Content (Large) */}
@@ -1301,7 +1262,18 @@ export default function RoomPage() {
           </p>
         </div>
 
-          {/* End Right Column */}
+              {/* Chat — visible on mobile only (below voting area) */}
+            {hasJoined && roomId && userId && room.participants[userId] && (
+              <div className="lg:hidden">
+                <RoomChat
+                  roomId={roomId}
+                  userId={userId}
+                  userName={room.participants[userId].name}
+                />
+              </div>
+            )}
+
+        {/* End Right Column */}
           </div>
         
         {/* End 2-Column Grid */}
@@ -1335,12 +1307,20 @@ export default function RoomPage() {
         </div>
       )}
 
+      {/* Share / QR Code Modal */}
+      {showShareModal && room?.roomCode && (
+        <ShareRoomModal
+          roomCode={room.roomCode}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
+
       {/* Name Prompt Modal */}
       {showNamePrompt && room && (
         <NamePrompt
           onSubmit={handleNameSubmit}
           isLoading={joining}
-          requiresPassword={!!room?.password && sessionStorage.getItem('roomCreator') !== room.roomCode}
+          requiresPassword={!!room?.hasPassword && sessionStorage.getItem('roomCreator') !== room.roomCode}
           passwordError={passwordError}
         />
       )}

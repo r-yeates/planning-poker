@@ -16,6 +16,7 @@ interface ParticipantCardProps {
   anonymousVoting: boolean;
   onKick: (participantId: string) => void;
   onMakeHost?: (participantId: string) => void;
+  onClearVote?: (participantId: string) => void;
   isHost: boolean;
 }
 
@@ -28,7 +29,8 @@ const ParticipantCard = ({
   votesRevealed,
   anonymousVoting,
   onKick,
-  onMakeHost
+  onMakeHost,
+  onClearVote,
 }: ParticipantCardProps) => {
   const hasVoted = vote !== undefined;
     // Determine border color based on voting status
@@ -133,6 +135,16 @@ const ParticipantCard = ({
               title="Make host"
             >
               Make Host
+            </button>
+          )}
+          {/* Clear vote button: only show if admin, not self, has voted, votes not yet revealed */}
+          {isAdmin && !isCurrentUser && vote !== undefined && !votesRevealed && onClearVote && (
+            <button
+              onClick={() => onClearVote(participantId)}
+              className="opacity-0 group-hover:opacity-100 px-2 py-1 text-xs font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/50 rounded border border-amber-200 dark:border-amber-800 transition-all"
+              title="Clear this vote"
+            >
+              Clear Vote
             </button>
           )}
           {isAdmin && !isCurrentUser && (

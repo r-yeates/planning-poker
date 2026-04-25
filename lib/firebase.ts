@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 import type { ScaleType } from './estimation-scales';
 
 // Function to generate a random room code
@@ -46,6 +47,25 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export const auth = getAuth(app);
+
+/** Sign in anonymously and return the Firebase UID, falling back to crypto.randomUUID. */
+export const ensureAnonymousAuth = async (): Promise<string> => {
+  // Wait for Firebase Auth to restore persisted state from localStorage before checking currentUser
+  await auth.authStateReady();
+  if (auth.currentUser) return auth.currentUser.uid;
+  try {
+    const { user } = await signInAnonymously(auth);
+    return user.uid;
+  } catch {
+    // Fallback: generate a local UUID if auth is unavailable
+    const stored = localStorage.getItem('userId');
+    if (stored) return stored;
+    const id = crypto.randomUUID();
+    localStorage.setItem('userId', id);
+    return id;
+  }
+};
 
 // Types for our Firestore data
 export interface Participant {
@@ -71,17 +91,8 @@ export interface RoundResult {
   completedAt: number;     // timestamp when round was completed
 }
 
-export interface TicketItem {
-  id: string;
-  title: string;
-  description?: string;
-  addedBy: string; // userId who added the ticket
-  addedAt: number; // timestamp
-}
-
 export interface Room {
   currentTicket: string;
-  ticketQueue: TicketItem[]; // List of tickets ready to be pointed
   votesRevealed: boolean;
   autoReveal: boolean;
   anonymousVoting: boolean; // Hide voter identities
@@ -91,11 +102,11 @@ export interface Room {
   participants: Record<string, Participant>;
   votes: Record<string, Vote>;
   roomCode: string;
-  password?: string; // Optional password for room access
+  password?: string; // DEPRECATED — do not use; kept only for type compatibility during migration
+  hasPassword?: boolean; // Whether the room has a password (password stored server-side only)
   timer?: TimerState; // Optional timer state
   roundHistory: RoundResult[];
   scaleType: ScaleType;
-  isTicketQueueCollapsed?: boolean;
   isLocked?: boolean; // Prevent new participants from joining
 }
 
@@ -111,22 +122,4 @@ export const getRoomByCode = async (code: string) => {
     id: snapshot.docs[0].id,
     ...snapshot.docs[0].data()
   } as Room & { id: string };
-};
-
-
-
-// Function to verify room password
-export const verifyRoomPassword = async (code: string, password: string): Promise<boolean> => {
-  const room = await getRoomByCode(code);
-  if (!room) {
-    return false;
-  }
-  
-  // If room has no password, allow access
-  if (!room.password) {
-    return true;
-  }
-  
-  // Check if provided password matches
-  return room.password === password;
 };
