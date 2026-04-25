@@ -591,22 +591,10 @@ export default function HomePage() {
               
               <div className="flex items-center gap-1 md:gap-2">
                 <Link
-                  href="/blog"
-                  className="hidden sm:block px-3 md:px-4 py-2 text-sm font-medium text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-[#303030] rounded-lg transition-all duration-200"
-                >
-                  Blog
-                </Link>
-                <Link
                   href="/faq"
                   className="hidden sm:block px-3 md:px-4 py-2 text-sm font-medium text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-[#303030] rounded-lg transition-all duration-200"
                 >
                   FAQ
-                </Link>
-                <Link
-                  href="/analytics"
-                  className="hidden md:block px-4 py-2 text-sm font-medium text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-[#303030] rounded-lg transition-all duration-200"
-                >
-                  Analytics
                 </Link>
                 <div className="ml-1 md:ml-3">
                   <ThemeToggle />
@@ -709,7 +697,7 @@ export default function HomePage() {
                 Choose Your Method
               </h2>
               <p className="text-xl text-slate-600 dark:text-[#aaaaaa] max-w-3xl mx-auto">
-                Select from professionally configured templates or customize your own estimation approach
+                Select from configured templates or customize your own estimation approach
               </p>
             </div>
 
@@ -750,7 +738,7 @@ export default function HomePage() {
                   textColor: 'slate-700',
                   darkBgColor: '[#272727]',
                   darkBorderColor: '[#404040]',
-                  darkTextColor: '[#f1f1f1]'
+                  darkTextColor: '[#272727]'
                 }
               ].map((template) => (
                 <div key={template.id} className="group relative">
@@ -1029,90 +1017,6 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Resources Section */}
-        <section className="py-24 bg-white dark:bg-[#181818]">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4">
-                Knowledge Center
-              </h2>
-              <p className="text-xl text-slate-600 dark:text-[#aaaaaa] max-w-3xl mx-auto">
-                Expert guidance and best practices for successful agile estimation
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-[#272727] dark:to-[#303030] rounded-2xl p-8 border border-slate-200 dark:border-[#404040]">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-gradient-to-br from-[#3b82f6] to-[#8b5cf6] rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Expert Articles</h3>
-                </div>
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                    <span className="text-slate-700 dark:text-[#cccccc]">Planning Poker Fundamentals</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-[#8b5cf6] rounded-full"></div>
-                    <span className="text-slate-700 dark:text-[#cccccc]">Avoiding Estimation Bias</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                    <span className="text-slate-700 dark:text-[#cccccc]">Remote Team Best Practices</span>
-                  </div>
-                </div>
-                <Link 
-                  href="/blog"
-                  className="inline-flex items-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white px-6 py-3 rounded-xl font-medium transition-colors shadow-md hover:shadow-lg"
-                >
-                  Read Articles
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                </Link>
-              </div>
-
-              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-2xl p-8 border border-emerald-200 dark:border-emerald-800">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Frequently Asked</h3>
-                </div>
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                    <span className="text-slate-700 dark:text-[#cccccc]">Understanding Story Points</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
-                    <span className="text-slate-700 dark:text-[#cccccc]">Handling Estimation Conflicts</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
-                    <span className="text-slate-700 dark:text-[#cccccc]">Scaling Agile Estimation</span>
-                  </div>
-                </div>
-                <Link 
-                  href="/faq"
-                  className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-medium transition-colors shadow-md hover:shadow-lg"
-                >
-                  View FAQ
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                </Link>
               </div>
             </div>
           </div>

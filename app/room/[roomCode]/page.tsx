@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { doc, onSnapshot, updateDoc, deleteDoc, deleteField } from 'firebase/firestore';
 import { db, getRoomByCode, verifyRoomPassword } from '@/lib/firebase';
@@ -37,7 +37,7 @@ export default function RoomPage() {
   const [wasInRoom, setWasInRoom] = useState(false); // Track if user was ever in the room
   const [showNewRoundNotification, setShowNewRoundNotification] = useState(false);
   const [isNotificationVisible, setIsNotificationVisible] = useState(false);
-  const [previousRoundState, setPreviousRoundState] = useState<{votesRevealed: boolean; hasVotes: boolean} | null>(null);
+  const previousRoundStateRef = useRef<{votesRevealed: boolean; hasVotes: boolean} | null>(null);
   const [isLeavingRoom, setIsLeavingRoom] = useState(false);
   const [isRoomSettingsCollapsed, setIsRoomSettingsCollapsed] = useState(true);
 
@@ -167,9 +167,9 @@ export default function RoomPage() {
     };
     
     // Check if this is a transition from revealed votes to a reset state
-    if (previousRoundState) {
-      const isNewRound = previousRoundState.votesRevealed === true && 
-                        previousRoundState.hasVotes === true &&
+    if (previousRoundStateRef.current) {
+      const isNewRound = previousRoundStateRef.current.votesRevealed === true && 
+                        previousRoundStateRef.current.hasVotes === true &&
                         currentState.votesRevealed === false && 
                         currentState.hasVotes === false;                          if (isNewRound && !showNewRoundNotification) {
         console.log('New round detected - transition from revealed to reset');
@@ -192,8 +192,8 @@ export default function RoomPage() {
     }
     
     // Check if this is a transition to revealed votes (trigger confetti)
-    if (previousRoundState && 
-        previousRoundState.votesRevealed === false && 
+    if (previousRoundStateRef.current && 
+        previousRoundStateRef.current.votesRevealed === false && 
         currentState.votesRevealed === true && 
         currentState.hasVotes === true && 
         room.confettiEnabled) {
@@ -202,8 +202,8 @@ export default function RoomPage() {
     }
     
     // Update previous state for next comparison
-    setPreviousRoundState(currentState);
-  }, [room?.votesRevealed, room?.votes, hasJoined, showNewRoundNotification, previousRoundState]);
+    previousRoundStateRef.current = currentState;
+  }, [room?.votesRevealed, room?.votes, hasJoined, showNewRoundNotification]);
   // Sync selected card with user's vote in database
   useEffect(() => {
     if (!room || !userId) return;
