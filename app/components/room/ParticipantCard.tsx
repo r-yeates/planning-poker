@@ -9,7 +9,9 @@ interface ParticipantCardProps {
     isHost: boolean;
     role: 'voter' | 'spectator' | 'admin';
   };
-  vote?: string | number;
+  vote?: string | number; // only known after reveal
+  hasVoted: boolean;
+  isActive?: boolean;
   isCurrentUser: boolean;
   isAdmin: boolean;
   votesRevealed: boolean;
@@ -24,6 +26,8 @@ const ParticipantCard = ({
   participantId,
   participant,
   vote,
+  hasVoted,
+  isActive = true,
   isCurrentUser,
   isAdmin,
   votesRevealed,
@@ -32,7 +36,6 @@ const ParticipantCard = ({
   onMakeHost,
   onClearVote,
 }: ParticipantCardProps) => {
-  const hasVoted = vote !== undefined;
     // Determine border color based on voting status
   const getBorderColor = () => {
     if (hasVoted && !votesRevealed && participant.role !== 'spectator') {
@@ -46,8 +49,14 @@ const ParticipantCard = ({
       return null;
     }
     
+    if (!isActive && !votesRevealed) {
+      return <div className="text-xs text-slate-500 dark:text-[#888888]">{hasVoted ? '✓ Voted · away' : 'Away'}</div>;
+    }
+
     if (!hasVoted) {
-      return <div className="text-xs text-red-600 dark:text-red-400">Waiting...</div>;
+      return votesRevealed
+        ? <div className="text-xs text-slate-500 dark:text-[#888888]">No vote</div>
+        : <div className="text-xs text-red-600 dark:text-red-400">Waiting...</div>;
     }
     
     if (hasVoted && !votesRevealed) {
@@ -91,7 +100,7 @@ const ParticipantCard = ({
   };
 
   return (
-    <div className={`bg-white dark:bg-[#212121] rounded-lg border p-3 transition-all hover:shadow-md group ${getBorderColor()}`}>
+    <div className={`bg-white dark:bg-[#212121] rounded-lg border p-3 transition-all hover:shadow-md group ${getBorderColor()} ${isActive ? '' : 'opacity-60'}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0 flex items-center gap-3">
           {/* Avatar */}
@@ -138,7 +147,7 @@ const ParticipantCard = ({
             </button>
           )}
           {/* Clear vote button: only show if admin, not self, has voted, votes not yet revealed */}
-          {isAdmin && !isCurrentUser && vote !== undefined && !votesRevealed && onClearVote && (
+          {isAdmin && !isCurrentUser && hasVoted && !votesRevealed && onClearVote && (
             <button
               onClick={() => onClearVote(participantId)}
               className="opacity-0 group-hover:opacity-100 px-2 py-1 text-xs font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/50 rounded border border-amber-200 dark:border-amber-800 transition-all"

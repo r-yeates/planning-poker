@@ -1,39 +1,7 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import type { ScaleType } from './estimation-scales';
-
-// Function to generate a random room code
-const generateRoomCode = () => {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluding similar looking characters like 1/I, 0/O
-  return Array.from({ length: 5 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
-};
-
-// Function to check if a room code already exists
-const isRoomCodeAvailable = async (code: string) => {
-  const roomsRef = collection(db, 'rooms');
-  const q = query(roomsRef, where('roomCode', '==', code));
-  const snapshot = await getDocs(q);
-  return snapshot.empty;
-};
-
-// Function to generate a unique room code
-export const generateUniqueRoomCode = async (): Promise<string> => {
-  let code = generateRoomCode();
-  let attempts = 0;
-  const maxAttempts = 5;
-
-  while (!(await isRoomCodeAvailable(code)) && attempts < maxAttempts) {
-    code = generateRoomCode();
-    attempts++;
-  }
-
-  if (attempts === maxAttempts) {
-    throw new Error('Unable to generate unique room code');
-  }
-
-  return code;
-};
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -49,22 +17,13 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-/** Sign in anonymously and return the Firebase UID, falling back to crypto.randomUUID. */
+/** Sign in anonymously and return the Firebase UID. */
 export const ensureAnonymousAuth = async (): Promise<string> => {
-  // Wait for Firebase Auth to restore persisted state from localStorage before checking currentUser
+  // Wait for Firebase Auth to restore persisted state before checking currentUser
   await auth.authStateReady();
   if (auth.currentUser) return auth.currentUser.uid;
-  try {
-    const { user } = await signInAnonymously(auth);
-    return user.uid;
-  } catch {
-    // Fallback: generate a local UUID if auth is unavailable
-    const stored = localStorage.getItem('userId');
-    if (stored) return stored;
-    const id = crypto.randomUUID();
-    localStorage.setItem('userId', id);
-    return id;
-  }
+  const { user } = await signInAnonymously(auth);
+  return user.uid;
 };
 
 // Types for our Firestore data
@@ -100,7 +59,9 @@ export interface Room {
   confettiEnabled: boolean; // Enable confetti celebrations
   createdAt: Date;
   participants: Record<string, Participant>;
-  votes: Record<string, Vote>;
+  votes: Record<string, Vote>; // only populated once votes are revealed
+  voted?: Record<string, boolean>; // who has voted this round (values stay private until reveal)
+  presence?: Record<string, unknown>; // per-participant heartbeat (Firestore Timestamp)
   roomCode: string;
   password?: string; // DEPRECATED — do not use; kept only for type compatibility during migration
   hasPassword?: boolean; // Whether the room has a password (password stored server-side only)
@@ -110,16 +71,11 @@ export interface Room {
   isLocked?: boolean; // Prevent new participants from joining
 }
 
-// Function to get room by code
+// Room documents are keyed by their room code
 export const getRoomByCode = async (code: string) => {
-  const roomsRef = collection(db, 'rooms');
-  const q = query(roomsRef, where('roomCode', '==', code.toUpperCase()));
-  const snapshot = await getDocs(q);
-  if (snapshot.empty) {
-    return null;
-  }
-  return {
-    id: snapshot.docs[0].id,
-    ...snapshot.docs[0].data()
-  } as Room & { id: string };
+  const id = code.trim().toUpperCase();
+  if (!id) return null;
+  const snapshot = await getDoc(doc(db, 'rooms', id));
+  if (!snapshot.exists()) return null;
+  return { id: snapshot.id, ...snapshot.data() } as Room & { id: string };
 };

@@ -1,18 +1,17 @@
 'use client';
 
 import { useState, useEffect, useRef, memo } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import type { Room } from '@/lib/firebase';
+import { roomAction } from '@/lib/room-api';
 
 interface VotingTimerProps {
   room: Room;
-  roomId: string;
+  roomId?: string;
   isAdmin: boolean;
   compact?: boolean;
 }
 
-const VotingTimer = ({ room, roomId, isAdmin, compact = false }: VotingTimerProps) => {
+const VotingTimer = ({ room, isAdmin, compact = false }: VotingTimerProps) => {
   const [timeInput, setTimeInput] = useState('5');
   const [remainingTime, setRemainingTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);  const [showControls, setShowControls] = useState(false);
@@ -171,17 +170,10 @@ const VotingTimer = ({ room, roomId, isAdmin, compact = false }: VotingTimerProp
     if (!isAdmin) return;
     resetNotificationState();
     
-    const minutes = parseInt(timeInput) || 5;
-    const duration = minutes * 60; // duration in seconds
+    const minutes = Math.min(180, Math.max(1, parseInt(timeInput) || 5));
     
     try {
-      await updateDoc(doc(db, 'rooms', roomId), {
-        timer: {
-          startTime: Date.now(),
-          duration: duration,
-          isRunning: true
-        }
-      });
+      await roomAction('timer', { roomCode: room.roomCode, op: 'start', minutes });
     } catch (error) {
       console.error('Error starting timer:', error);
     }
@@ -191,13 +183,7 @@ const VotingTimer = ({ room, roomId, isAdmin, compact = false }: VotingTimerProp
     setWasRunning(false);
     
     try {
-      await updateDoc(doc(db, 'rooms', roomId), {
-        timer: {
-          startTime: null,
-          duration: 0,
-          isRunning: false
-        }
-      });
+      await roomAction('timer', { roomCode: room.roomCode, op: 'reset' });
     } catch (error) {
       console.error('Error resetting timer:', error);
     }
@@ -206,16 +192,8 @@ const VotingTimer = ({ room, roomId, isAdmin, compact = false }: VotingTimerProp
   const addTime = async (minutes: number) => {
     if (!isAdmin || !room.timer || !room.timer.isRunning) return;
     
-    const additionalSeconds = minutes * 60;
-    const newDuration = room.timer.duration + additionalSeconds;
-    
     try {
-      await updateDoc(doc(db, 'rooms', roomId), {
-        timer: {
-          ...room.timer,
-          duration: newDuration
-        }
-      });
+      await roomAction('timer', { roomCode: room.roomCode, op: 'add', minutes });
     } catch (error) {
       console.error('Error adding time:', error);
     }

@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { addDoc, collection } from 'firebase/firestore';
-import { db, generateUniqueRoomCode, getRoomByCode, ensureAnonymousAuth } from '@/lib/firebase';
+import { getRoomByCode, ensureAnonymousAuth } from '@/lib/firebase';
+import { roomAction } from '@/lib/room-api';
 import { type ScaleType } from '@/lib/estimation-scales';
 import ThemeToggle from './components/global/ThemeToggle';
 import Link from 'next/link';
@@ -154,48 +154,20 @@ export default function HomePage() {
     return uid;
   }, []);
 
-  const createRoom = async () => {
+  const createRoomWith = async (settings: {
+    scaleType?: ScaleType;
+    autoReveal?: boolean;
+    anonymousVoting?: boolean;
+    showTooltips?: boolean;
+  }) => {
     setError('');
     setIsCreating(true);
     try {
       await ensureUserId();
-
-      const roomCode = await generateUniqueRoomCode();
-      const roomData: Record<string, unknown> = {
-        roomCode,
-        participants: {},
-        votes: {},
-        votesRevealed: false,
-        autoReveal: false,
-        anonymousVoting: false,
-        showTooltips: false,
-        confettiEnabled: false,
-        currentTicket: '',
-        scaleType: 'fibonacci',
-        createdAt: new Date(),
-        timer: {
-          startTime: null,
-          duration: 0,
-          isRunning: false
-        },
-        roundHistory: [],
-      };
-
-      // Store hasPassword flag (not the plaintext password)
-      if (roomPassword.trim()) {
-        roomData.hasPassword = true;
-      }
-
-      const docRef = await addDoc(collection(db, 'rooms'), roomData);
-
-      // Store the password hash server-side
-      if (roomPassword.trim()) {
-        await fetch('/api/set-room-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ roomId: docRef.id, password: roomPassword.trim() }),
-        });
-      }
+      const { roomCode } = await roomAction<{ roomCode: string }>('create', {
+        ...settings,
+        password: roomPassword.trim() || undefined,
+      });
 
       sessionStorage.setItem('roomJoinVerified', roomCode);
       sessionStorage.setItem('roomCreator', roomCode);
@@ -207,61 +179,20 @@ export default function HomePage() {
     }
   };
 
+  const createRoom = () => createRoomWith({});
+
   const createRoomWithTemplate = async (templateId: string) => {
     const template = ROOM_TEMPLATES[templateId];
     if (!template) {
       setError('Invalid template selected');
       return;
     }
-
-    setError('');
-    setIsCreating(true);
-    try {
-      await ensureUserId();
-
-      const roomCode = await generateUniqueRoomCode();
-      const roomData: Record<string, unknown> = {
-        roomCode,
-        participants: {},
-        votes: {},
-        votesRevealed: false,
-        autoReveal: template.autoReveal,
-        anonymousVoting: template.anonymousVoting,
-        showTooltips: template.showTooltips,
-        confettiEnabled: false,
-        currentTicket: '',
-        scaleType: template.scaleType,
-        createdAt: new Date(),
-        timer: {
-          startTime: null,
-          duration: 0,
-          isRunning: false
-        },
-        roundHistory: [],
-      };
-
-      if (roomPassword.trim()) {
-        roomData.hasPassword = true;
-      }
-
-      const docRef = await addDoc(collection(db, 'rooms'), roomData);
-
-      if (roomPassword.trim()) {
-        await fetch('/api/set-room-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ roomId: docRef.id, password: roomPassword.trim() }),
-        });
-      }
-
-      sessionStorage.setItem('roomJoinVerified', roomCode);
-      sessionStorage.setItem('roomCreator', roomCode);
-      router.push(`/room/${roomCode}`);
-    } catch (error) {
-      console.error('Error creating room with template:', error);
-      setError('Failed to create room. Please try again.');
-      setIsCreating(false);
-    }
+    await createRoomWith({
+      scaleType: template.scaleType,
+      autoReveal: template.autoReveal,
+      anonymousVoting: template.anonymousVoting,
+      showTooltips: template.showTooltips,
+    });
   };
 
   const joinRoom = async () => {
@@ -283,19 +214,14 @@ export default function HomePage() {
         return;
       }
 
-      // Check password if room is password-protected
+      // The server verifies the password when you join; hold it for the room page for this tab only
       if (roomData.hasPassword) {
-        const res = await fetch('/api/verify-room-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ roomCode: normalizedCode, password: joinPassword }),
-        });
-        const data = await res.json() as { valid?: boolean };
-        if (!data.valid) {
-          setError('Incorrect password. Please check the password and try again.');
+        if (!joinPassword.trim()) {
+          setError('This room requires a password.');
           setIsJoining(false);
           return;
         }
+        sessionStorage.setItem(`roomPassword:${normalizedCode}`, joinPassword);
       }
 
       // Store user info and redirect
@@ -303,11 +229,6 @@ export default function HomePage() {
       
       // Set verification flag for auto-join
       sessionStorage.setItem('roomJoinVerified', normalizedCode);
-      // Password was already verified on this page — skip re-check on room page
-      if (roomData.hasPassword) {
-        sessionStorage.setItem('roomPasswordVerified', normalizedCode);
-      }
-      
       router.push(`/room/${normalizedCode}`);
     } catch (error) {
       console.error('Error joining room:', error);

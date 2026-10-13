@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, memo } from 'react';
 import type { Room } from '@/lib/firebase';
+import { getActiveVoterIds } from '@/lib/room-shared';
 
 interface VoteProgressIndicatorProps {
   room: Room;
@@ -22,16 +23,14 @@ const VoteProgressIndicator = ({
   const [isRoundActive, setIsRoundActive] = useState(false);
 
   // Calculate voting stats excluding spectators
-  const votersOnly = Object.entries(room?.participants || {}).filter(([, participant]) => 
-    participant.role !== 'spectator'
-  );
-  const voterCount = votersOnly.length;
-  const votedCount = votersOnly.filter(([id]) => room?.votes[id]).length;
+  const voterIds = getActiveVoterIds(room);
+  const voterCount = voterIds.length;
+  const votedCount = voterIds.filter((id) => room?.voted?.[id]).length;
   const allVotersHaveVoted = voterCount > 0 && votedCount === voterCount;
   
   // Track round start/reset
   useEffect(() => {
-    const hasVotes = room.votes && Object.keys(room.votes).length > 0;
+    const hasVotes = room.voted && Object.keys(room.voted).length > 0;
     const votesRevealed = room.votesRevealed;
     
     // Start round timer when voting is possible (has voters) and no votes yet (new round)
@@ -47,7 +46,7 @@ const VoteProgressIndicator = ({
       setIsRoundActive(false);
       roundStartTimeRef.current = null;
     }
-  }, [room.votes, room.votesRevealed, isRoundActive, voterCount]);
+  }, [room.voted, room.votesRevealed, isRoundActive, voterCount]);
 
   // Round timer countdown effect
   useEffect(() => {

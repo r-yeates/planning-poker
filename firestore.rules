@@ -2,23 +2,54 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function roomPath(roomId) {
+      return /databases/$(database)/documents/rooms/$(roomId);
+    }
+
+    function isParticipant(roomId) {
+      return request.auth != null
+        && request.auth.uid in get(roomPath(roomId)).data.participants;
+    }
+
     match /rooms/{roomId} {
-      // Anyone can read room data (password is NOT stored here)
-      allow read: if true;
+      // Room codes are the doc ids: a room can be fetched by code but never listed.
+      allow get: if true;
+      allow list: if false;
 
-      // Plaintext password must never be written to the room document
-      allow create: if !('password' in request.resource.data);
-      allow update: if !('password' in request.resource.data);
-      allow delete: if true;
+      // All room changes (create, join, vote, reveal, host actions, delete) go through
+      // /api/room using the Admin SDK. The only client write allowed is a participant
+      // refreshing their own presence heartbeat.
+      allow create, delete: if false;
+      allow update: if request.auth != null
+        && request.auth.uid in resource.data.participants
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['presence'])
+        && request.resource.data.presence.diff(resource.data.presence).affectedKeys().hasOnly([request.auth.uid])
+        && request.resource.data.presence[request.auth.uid] == request.time;
 
-      // Private subcollection — accessible only by the server via Admin SDK
+      // Password hash, creator id and attempt counters — server only
       match /private/{document} {
         allow read, write: if false;
       }
 
-      // Chat messages subcollection — anyone in the session can read/create, no edits/deletes
+      // A voter may read only their own vote. Everyone else's votes reach the room
+      // document when the host reveals them.
+      match /votes/{voterId} {
+        allow get: if request.auth != null && request.auth.uid == voterId;
+        allow list, write: if false;
+      }
+
+      // Chat: participants only, authored as themselves, no edits/deletes
       match /messages/{messageId} {
-        allow read, create: if true;
+        allow read: if isParticipant(roomId);
+        allow create: if isParticipant(roomId)
+          && request.resource.data.keys().hasOnly(['userId', 'name', 'text', 'timestamp'])
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.name is string
+          && request.resource.data.name.size() <= 40
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500
+          && request.resource.data.timestamp is number;
         allow update, delete: if false;
       }
     }
