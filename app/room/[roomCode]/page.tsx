@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, ensureAnonymousAuth } from '@/lib/firebase';
 import { roomAction, RoomApiError } from '@/lib/room-api';
+import { FEATURES } from '@/lib/features';
 import { HEARTBEAT_MS, getActiveVoterIds, isParticipantActive } from '@/lib/room-shared';
 
 import type { Room } from '@/lib/firebase';
@@ -22,6 +23,10 @@ import VoteStats from '@/app/components/room/VoteStats';
 import VotingTimer from '@/app/components/room/VotingTimer';
 import ShareRoomModal from '@/app/components/room/ShareRoomModal';
 import RoomChat from '@/app/components/room/RoomChat';
+import TicketPanel from '@/app/components/room/TicketPanel';
+import BacklogPanel from '@/app/components/room/BacklogPanel';
+import EstimateControls from '@/app/components/room/EstimateControls';
+import SessionSummary from '@/app/components/room/SessionSummary';
 
 
 export default function RoomPage() {
@@ -35,9 +40,11 @@ export default function RoomPage() {
   const [actionError, setActionError] = useState('');
   const [needsPassword, setNeedsPassword] = useState(false);
   const joinInFlightRef = useRef(false);
+  const awaitingJoinSnapshotRef = useRef(false); // join succeeded; the room snapshot hasn't caught up yet
   const actionErrorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [copied, setCopied] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [joining, setJoining] = useState(false);
   const [canShare, setCanShare] = useState(false);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
@@ -167,12 +174,13 @@ export default function RoomPage() {
     if (!room || !userId) return;
     
     if (room.participants[userId]) {
+      awaitingJoinSnapshotRef.current = false;
       setHasJoined(true);
       setWasInRoom(true);
       setShowNamePrompt(false);
     } else {
       // Heartbeat snapshots keep arriving mid-join; don't flash the prompt over an in-flight join
-      if (joinInFlightRef.current) return;
+      if (joinInFlightRef.current || awaitingJoinSnapshotRef.current) return;
       const isVerified = sessionStorage.getItem('roomJoinVerified');
       const userName = localStorage.getItem('userName');
       
@@ -337,7 +345,8 @@ export default function RoomPage() {
       localStorage.setItem('userName', name);
       setNeedsPassword(false);
       setHasJoined(true);
-      setWasInRoom(true); // Track that user joined the room
+      // wasInRoom is set by the snapshot once it lists us; setting it now would look like a kick
+      awaitingJoinSnapshotRef.current = true;
       setShowNamePrompt(false);
     } catch (error) {
       console.error('Error joining room:', error);
@@ -381,9 +390,39 @@ export default function RoomPage() {
     return runAction('reveal', {}, 'Could not reveal the votes. Please try again.');
   };
 
+  // Votes cast in a round that hasn't been revealed would be discarded by moving on
+  const roundInProgress = !!room && !room.votesRevealed && Object.keys(room.voted || {}).length > 0;
+
+  // Skip: records a revealed round without an estimate, then moves to the next ticket
   const handleReset = async () => {
     if (!isAdmin) return;
+    if (roundInProgress && !window.confirm('Votes have been cast but not revealed. Move on and discard them?')) return;
     if (await runAction('newRound', {}, 'Could not start a new round. Please try again.')) {
+      setSelectedCard(null);
+    }
+  };
+
+  const handleRevote = async () => {
+    if (!isAdmin) return;
+    if (await runAction('revote', {}, 'Could not restart voting. Please try again.')) {
+      setSelectedCard(null);
+    }
+  };
+
+  const handleFinalize = (finalEstimate: number | string | null, advance: boolean) =>
+    runAction('finalize', { finalEstimate, advance }, 'Could not save the estimate. Please try again.');
+
+  const handleSetTicket = (text: string) => runAction('setTicket', { text }, 'Could not update the ticket.');
+
+  const handleAddBacklog = (text: string, mode: 'append' | 'replace') =>
+    runAction('setBacklog', { text, mode }, 'Could not update the backlog.');
+
+  const handleRemoveBacklogItem = (ticketId: string) => {
+    runAction('removeBacklogItem', { ticketId }, 'Could not remove that ticket.');
+  };
+
+  const handleGoToTicket = async (index: number) => {
+    if (await runAction('goToTicket', { index }, 'Could not switch tickets.')) {
       setSelectedCard(null);
     }
   };
@@ -579,6 +618,23 @@ export default function RoomPage() {
               )}
             </button>
 
+            {/* Session summary */}
+            {FEATURES.sessionSummary && hasJoined && (
+              <button
+                onClick={() => setShowSummary(true)}
+                className="flex items-center gap-2 px-3 py-2 h-10 rounded-lg border bg-white dark:bg-[#212121] border-slate-200 dark:border-[#303030] text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#303030] transition-colors"
+                title="Session summary and export"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                <span className="text-sm hidden sm:inline">Summary</span>
+                {(room.roundHistory?.length ?? 0) > 0 && (
+                  <span className="text-xs font-semibold px-1.5 rounded-full bg-slate-100 dark:bg-[#303030]">{room.roundHistory?.length}</span>
+                )}
+              </button>
+            )}
+
             {/* Spectator Toggle */}
             {userId && room?.participants[userId] && (
               <button
@@ -650,12 +706,9 @@ export default function RoomPage() {
               </div>
               
               {/* Current Ticket */}
-              {room.currentTicket && (
+              {FEATURES.ticketEntry && (room.ticket || isAdmin) && (
                 <div className="px-3 py-2 border-t border-slate-200 dark:border-[#303030]">
-                  <div className="text-xs text-slate-500 dark:text-[#888888] mb-1">Current Ticket</div>
-                  <div className="text-sm text-slate-800 dark:text-[#cccccc] font-medium line-clamp-2">
-                    {room.currentTicket}
-                  </div>
+                  <TicketPanel ticket={room.ticket} isAdmin={isAdmin} onSave={handleSetTicket} />
                 </div>
               )}
 
@@ -828,6 +881,20 @@ export default function RoomPage() {
               )}
             </div>
             
+            {/* Backlog queue — visible to everyone, editable by the host */}
+            {FEATURES.backlog && (
+            <BacklogPanel
+              backlog={room.backlog || []}
+              ticketIndex={room.ticketIndex ?? null}
+              history={room.roundHistory || []}
+              isAdmin={isAdmin}
+              roundInProgress={roundInProgress}
+              onAdd={handleAddBacklog}
+              onRemove={handleRemoveBacklogItem}
+              onGoTo={handleGoToTicket}
+            />
+            )}
+
             {/* Chat — visible on desktop in left column; on mobile it sits here in flow */}
             {/* {hasJoined && roomId && userId && room.participants[userId] && (
               <div className="hidden lg:block">
@@ -899,10 +966,9 @@ export default function RoomPage() {
         />
 
         {/* Admin Voting Controls */}
-        {isAdmin && (
+        {isAdmin && !room.votesRevealed && (
           <div className="flex justify-center">
-            {!room.votesRevealed ? (
-              (() => {
+            {(() => {
                 // Check voting status for button styling
                 // const votersOnly = Object.entries(room.participants).filter(([, p]) => p.role !== 'spectator');
                 // const votedIds = Object.keys(room.votes || {});
@@ -939,16 +1005,26 @@ export default function RoomPage() {
                     )}
                   </div>
                 );
-              })()
-            ) : (
-              <button
-                onClick={handleReset}
-                className="btn btn-secondary px-8 py-3 text-base"
-              >
-                New Round
-              </button>
-            )}
+              })()}
           </div>
+        )}
+
+        {/* After reveal: host records the agreed estimate; everyone sees it once saved */}
+        {room.votesRevealed && !FEATURES.finalEstimates && isAdmin && (
+          <div className="flex justify-center">
+            <button onClick={handleReset} className="btn btn-secondary px-8 py-3 text-base">
+              New Round
+            </button>
+          </div>
+        )}
+        {room.votesRevealed && FEATURES.finalEstimates && (
+          <EstimateControls
+            room={room}
+            isAdmin={isAdmin}
+            onFinalize={handleFinalize}
+            onRevote={handleRevote}
+            onSkip={handleReset}
+          />
         )}        {/* Version Footer */}
         <div className="text-center mt-8 space-y-1">
           {/* <p className="text-xs text-gray-400 dark:text-gray-500">v{packageJson.version}</p> */}
@@ -1008,6 +1084,15 @@ export default function RoomPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Session Summary Modal */}
+      {FEATURES.sessionSummary && showSummary && room?.roomCode && (
+        <SessionSummary
+          roomCode={room.roomCode}
+          history={room.roundHistory || []}
+          onClose={() => setShowSummary(false)}
+        />
       )}
 
       {/* Share / QR Code Modal */}

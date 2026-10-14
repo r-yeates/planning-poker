@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import type { ScaleType } from './estimation-scales';
+import type { Ticket } from './tickets';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -34,7 +35,7 @@ export interface Participant {
 }
 
 export interface Vote {
-  value: number | '?' | '☕';
+  value: number | string; // numbers, T-shirt sizes, '?' or '☕'
 }
 
 export interface TimerState {
@@ -44,14 +45,19 @@ export interface TimerState {
 }
 
 export interface RoundResult {
-  ticket: string;
+  ticket: Ticket | null;
   votes: Record<string, Vote>;
-  finalEstimate: number;
+  voterNames?: Record<string, string>; // omitted in anonymous rooms
+  finalEstimate: number | string | null; // null = moved on without an estimate
   completedAt: number;     // timestamp when round was completed
 }
 
 export interface Room {
-  currentTicket: string;
+  currentTicket?: string; // DEPRECATED — replaced by `ticket`
+  ticket?: Ticket | null; // what is being estimated this round
+  backlog?: Ticket[]; // queued tickets, visible to everyone
+  ticketIndex?: number | null; // position of `ticket` in `backlog`; null for an ad-hoc ticket
+  roundRecorded?: boolean; // the current revealed round is already in roundHistory
   votesRevealed: boolean;
   autoReveal: boolean;
   anonymousVoting: boolean; // Hide voter identities
@@ -66,7 +72,7 @@ export interface Room {
   password?: string; // DEPRECATED — do not use; kept only for type compatibility during migration
   hasPassword?: boolean; // Whether the room has a password (password stored server-side only)
   timer?: TimerState; // Optional timer state
-  roundHistory: RoundResult[];
+  roundHistory?: RoundResult[];
   scaleType: ScaleType;
   isLocked?: boolean; // Prevent new participants from joining
 }

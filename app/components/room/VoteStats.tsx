@@ -10,7 +10,7 @@ type VoteValue = number | string;
 const isSpecial = (v: VoteValue) => SPECIAL_VOTES.includes(v);
 const label = (v: VoteValue) => (typeof v === 'number' ? `${v}pt` : v);
 
-function computeStats(room: Room) {
+export function computeStats(room: Room) {
   const votes = Object.values(room.votes || {}).map((v) => v.value as VoteValue);
   if (!room.votesRevealed || votes.length === 0) return null;
 

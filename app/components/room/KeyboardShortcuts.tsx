@@ -189,7 +189,7 @@ export default function KeyboardShortcuts({
                     </kbd>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600 dark:text-[#aaaaaa]">Start new round</span>
+                    <span className="text-gray-600 dark:text-[#aaaaaa]">Skip to next ticket / new round</span>
                     <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-white bg-gray-100 dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#404040] rounded">
                       N
                     </kbd>

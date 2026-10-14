@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { randomInt } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
 import { FieldValue, Timestamp, type Firestore, type Transaction, type DocumentReference } from 'firebase-admin/firestore';
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { FEATURES, type FeatureName } from '@/lib/features';
 import { ESTIMATION_SCALES, type ScaleType } from '@/lib/estimation-scales';
 import { hashPassword, verifyPassword, type StoredPassword } from '@/lib/room-passwords';
-import { getActiveVoterIds, isParticipantActive } from '@/lib/room-shared';
+import { getActiveVoterIds, isParticipantActive, SPECIAL_VOTES } from '@/lib/room-shared';
+import { parseTicketLine, parseTicketList, MAX_BACKLOG, type ParsedTicket, type Ticket } from '@/lib/tickets';
 
 export const runtime = 'nodejs';
 
@@ -33,7 +35,7 @@ class ApiError extends Error {
 }
 
 type Body = Record<string, unknown>;
-type Update = Record<string, FieldValue | object | string | number | boolean>;
+type Update = Record<string, FieldValue | object | string | number | boolean | null>;
 type Role = 'voter' | 'spectator' | 'admin';
 
 interface RoomDoc {
@@ -46,8 +48,25 @@ interface RoomDoc {
   isLocked?: boolean;
   hasPassword?: boolean;
   scaleType?: ScaleType;
+  anonymousVoting?: boolean;
   timer?: { startTime: number | null; duration: number; isRunning: boolean };
+  votes?: Record<string, { value: number | string }>;
+  ticket?: Ticket | null;
+  backlog?: Ticket[];
+  ticketIndex?: number | null;
+  roundRecorded?: boolean;
+  roundHistory?: RoundResult[];
 }
+
+interface RoundResult {
+  ticket: Ticket | null;
+  votes: Record<string, { value: number | string }>;
+  voterNames?: Record<string, string>;
+  finalEstimate: number | string | null;
+  completedAt: number;
+}
+
+const MAX_HISTORY = 200;
 
 interface AccessDoc extends Partial<StoredPassword> {
   creatorId?: string;
@@ -62,10 +81,13 @@ const touch = () => ({ expiresAt: Timestamp.fromMillis(Date.now() + ROOM_TTL_MS)
 async function authenticate(req: NextRequest): Promise<string> {
   const header = req.headers.get('authorization');
   if (!header?.startsWith('Bearer ')) throw new ApiError(401, 'Sign-in required');
+  const auth = adminAuth(); // a missing service account must surface as a 500, not a 401
   try {
-    return (await adminAuth().verifyIdToken(header.slice(7))).uid;
-  } catch {
-    throw new ApiError(401, 'Sign-in expired. Please reload the page.');
+    return (await auth.verifyIdToken(header.slice(7))).uid;
+  } catch (err) {
+    // Logged so deploys can tell a project mismatch from an expired token
+    console.error('verifyIdToken failed:', (err as { code?: string }).code, (err as Error).message);
+    throw new ApiError(401, 'Sign-in expired. Please reload the page.', 'invalid_token');
   }
 }
 
@@ -130,6 +152,60 @@ async function clearAllVotes(tx: Transaction, ref: DocumentReference) {
   snap.forEach((d) => tx.delete(d.ref));
 }
 
+/** Firestore rejects undefined fields, so only copy the ones that are set. */
+function toTicket(parsed: ParsedTicket, id: string = randomUUID()): Ticket {
+  const ticket: Ticket = { id, title: parsed.title };
+  if (parsed.url) ticket.url = parsed.url;
+  if (parsed.key) ticket.key = parsed.key;
+  if (parsed.source) ticket.source = parsed.source;
+  return ticket;
+}
+
+/** Public fields that start a fresh round. Callers must also run clearAllVotes. */
+const freshRound = () => ({ votesRevealed: false, votes: {}, voted: {}, roundRecorded: false });
+
+/**
+ * History update for the revealed round. With `estimate === undefined` it records the round
+ * only if it hasn't been recorded yet (used when moving on); otherwise it sets the estimate,
+ * updating the existing entry when the round was already recorded.
+ */
+function recordRound(room: RoomDoc, estimate?: number | string | null): Update {
+  if (!FEATURES.finalEstimates || !room.votesRevealed) return {};
+  const history = [...(room.roundHistory || [])];
+  if (room.roundRecorded && history.length > 0) {
+    if (estimate === undefined) return {};
+    history[history.length - 1] = { ...history[history.length - 1], finalEstimate: estimate };
+  } else {
+    const votes = room.votes || {};
+    const entry: RoundResult = { ticket: room.ticket ?? null, votes, finalEstimate: estimate ?? null, completedAt: Date.now() };
+    if (!room.anonymousVoting) {
+      entry.voterNames = Object.fromEntries(
+        Object.keys(votes).filter((id) => room.participants[id]).map((id) => [id, room.participants[id].name])
+      );
+    }
+    history.push(entry);
+  }
+  return { roundHistory: history.slice(-MAX_HISTORY), roundRecorded: true };
+}
+
+/** The ticket after the current one: the next backlog item, or none at the end of the list. */
+function nextTicket(room: RoomDoc): { ticket: Ticket | null; ticketIndex: number | null } {
+  if (!FEATURES.backlog) return { ticket: null, ticketIndex: null };
+  const backlog = room.backlog || [];
+  const next = room.ticketIndex === null || room.ticketIndex === undefined ? 0 : room.ticketIndex + 1;
+  return next < backlog.length ? { ticket: backlog[next], ticketIndex: next } : { ticket: null, ticketIndex: null };
+}
+
+function requireFeature(name: FeatureName) {
+  if (!FEATURES[name]) throw new ApiError(404, 'This feature is turned off', 'feature_disabled');
+}
+
+function ticketText(body: Body, key: string, max: number): string {
+  const v = body[key];
+  if (typeof v !== 'string' || v.length > max) throw new ApiError(400, `Invalid ${key}`);
+  return v;
+}
+
 // ---------- actions ----------
 
 type Handler = (db: Firestore, uid: string, body: Body) => Promise<Body>;
@@ -160,7 +236,10 @@ const handlers: Record<string, Handler> = {
         showTooltips: flag('showTooltips'),
         confettiEnabled: false,
         isLocked: false,
-        currentTicket: '',
+        ticket: null,
+        backlog: [],
+        ticketIndex: null,
+        roundRecorded: false,
         scaleType,
         createdAt: Timestamp.now(),
         timer: { startTime: null, duration: 0, isRunning: false },
@@ -296,7 +375,123 @@ const handlers: Record<string, Handler> = {
       const room = await loadRoom(tx, ref);
       requireHost(room, uid);
       await clearAllVotes(tx, ref);
-      tx.update(ref, { votesRevealed: false, votes: {}, voted: {}, currentTicket: '', ...touch() });
+      // Skip: keep an unestimated record of a revealed round, then move to the next ticket
+      tx.update(ref, { ...recordRound(room), ...freshRound(), ...nextTicket(room), ...touch() });
+    });
+    return { ok: true };
+  },
+
+  async revote(db, uid, body) {
+    const ref = roomRefFor(db, body);
+    await db.runTransaction(async (tx) => {
+      const room = await loadRoom(tx, ref);
+      requireHost(room, uid);
+      await clearAllVotes(tx, ref);
+      tx.update(ref, { ...freshRound(), ...touch() });
+    });
+    return { ok: true };
+  },
+
+  async finalize(db, uid, body) {
+    requireFeature('finalEstimates');
+    const ref = roomRefFor(db, body);
+    const estimate = body.finalEstimate;
+    const advance = body.advance === true;
+    await db.runTransaction(async (tx) => {
+      const room = await loadRoom(tx, ref);
+      requireHost(room, uid);
+      if (!room.votesRevealed) throw new ApiError(409, 'Reveal the votes before recording an estimate');
+      const allowed = ESTIMATION_SCALES[room.scaleType || 'fibonacci'].values.filter((v) => !SPECIAL_VOTES.includes(v));
+      if (estimate !== null && !allowed.some((v) => v === estimate)) throw new ApiError(400, 'Invalid estimate for this scale');
+      if (advance) await clearAllVotes(tx, ref);
+      tx.update(ref, {
+        ...recordRound(room, estimate as number | string | null),
+        ...(advance ? { ...freshRound(), ...nextTicket(room) } : {}),
+        ...touch(),
+      });
+    });
+    return { ok: true };
+  },
+
+  async setTicket(db, uid, body) {
+    requireFeature('ticketEntry');
+    const ref = roomRefFor(db, body);
+    const parsed = parseTicketLine(ticketText(body, 'text', 1000));
+    await db.runTransaction(async (tx) => {
+      const room = await loadRoom(tx, ref);
+      requireHost(room, uid);
+      const backlog = [...(room.backlog || [])];
+      const index = room.ticketIndex ?? null;
+      if (!parsed) {
+        tx.update(ref, { ticket: null, ticketIndex: null, ...touch() });
+        return;
+      }
+      if (index !== null && backlog[index]) {
+        // Editing a backlog item keeps its id so its history still matches
+        const ticket = toTicket(parsed, backlog[index].id);
+        backlog[index] = ticket;
+        tx.update(ref, { ticket, backlog, ...touch() });
+      } else {
+        tx.update(ref, { ticket: toTicket(parsed), ticketIndex: null, ...touch() });
+      }
+    });
+    return { ok: true };
+  },
+
+  async setBacklog(db, uid, body) {
+    requireFeature('backlog');
+    const ref = roomRefFor(db, body);
+    const mode = body.mode === 'replace' ? 'replace' : 'append';
+    const added = parseTicketList(ticketText(body, 'text', 100_000)).map((t) => toTicket(t));
+    if (added.length === 0) throw new ApiError(400, 'No tickets found');
+    await db.runTransaction(async (tx) => {
+      const room = await loadRoom(tx, ref);
+      requireHost(room, uid);
+      const backlog = mode === 'replace' ? added : [...(room.backlog || []), ...added];
+      if (backlog.length > MAX_BACKLOG) throw new ApiError(400, `The backlog is limited to ${MAX_BACKLOG} tickets`);
+      const update: Update = { backlog, ...touch() };
+      if (!room.ticket) {
+        update.ticket = backlog[0];
+        update.ticketIndex = 0;
+      } else if (mode === 'replace') {
+        update.ticketIndex = null; // the current ticket stays, detached from the old list
+      }
+      tx.update(ref, update);
+    });
+    return { ok: true };
+  },
+
+  async removeBacklogItem(db, uid, body) {
+    requireFeature('backlog');
+    const ref = roomRefFor(db, body);
+    const id = str(body, 'ticketId', 100);
+    await db.runTransaction(async (tx) => {
+      const room = await loadRoom(tx, ref);
+      requireHost(room, uid);
+      const backlog = room.backlog || [];
+      const removed = backlog.findIndex((t) => t.id === id);
+      if (removed === -1) throw new ApiError(404, 'Ticket not found');
+      const current = room.ticketIndex ?? null;
+      const ticketIndex = current === null || current === removed ? null : current > removed ? current - 1 : current;
+      tx.update(ref, { backlog: backlog.filter((t) => t.id !== id), ticketIndex, ...touch() });
+    });
+    return { ok: true };
+  },
+
+  async goToTicket(db, uid, body) {
+    requireFeature('backlog');
+    const ref = roomRefFor(db, body);
+    const index = body.index;
+    await db.runTransaction(async (tx) => {
+      const room = await loadRoom(tx, ref);
+      requireHost(room, uid);
+      const backlog = room.backlog || [];
+      if (typeof index !== 'number' || !Number.isInteger(index) || index < 0 || index >= backlog.length) {
+        throw new ApiError(400, 'Invalid ticket');
+      }
+      if (index === room.ticketIndex) return;
+      await clearAllVotes(tx, ref);
+      tx.update(ref, { ...recordRound(room), ...freshRound(), ticket: backlog[index], ticketIndex: index, ...touch() });
     });
     return { ok: true };
   },
@@ -395,7 +590,7 @@ const handlers: Record<string, Handler> = {
       const room = await loadRoom(tx, ref);
       requireHost(room, uid);
       await clearAllVotes(tx, ref);
-      tx.update(ref, { scaleType, votesRevealed: false, votes: {}, voted: {}, ...touch() });
+      tx.update(ref, { scaleType, ...freshRound(), ...touch() });
     });
     return { ok: true };
   },
