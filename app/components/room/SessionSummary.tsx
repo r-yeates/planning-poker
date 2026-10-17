@@ -38,6 +38,7 @@ function csvCell(value: string): string {
 
 export default function SessionSummary({ roomCode, history, onClose }: SessionSummaryProps) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   const totals = useMemo(() => {
     const estimated = history.filter((r) => r.finalEstimate !== null);
@@ -52,9 +53,10 @@ export default function SessionSummary({ roomCode, history, onClose }: SessionSu
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
+      setCopyFailed(false);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      alert('Could not copy to the clipboard. Use Download CSV instead.');
+      setCopyFailed(true);
     }
   };
 
@@ -145,6 +147,9 @@ export default function SessionSummary({ roomCode, history, onClose }: SessionSu
         </div>
 
         <div className="flex items-center justify-end gap-2 p-5 border-t border-slate-200 dark:border-[#303030]">
+          {copyFailed && (
+            <span role="alert" className="mr-auto text-xs text-red-600 dark:text-red-400">Couldn&apos;t copy. Use Download CSV instead.</span>
+          )}
           <button
             onClick={copyTable}
             disabled={history.length === 0}

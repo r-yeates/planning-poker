@@ -2,15 +2,21 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import ThemeToggle from '../components/global/ThemeToggle'
+import { DEFAULT_OG_IMAGE } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Planning Poker FAQ - Frequently Asked Questions',
   description: 'Get answers to common questions about planning poker, agile estimation, story points, and running effective estimation sessions.',
   keywords: 'planning poker FAQ, agile estimation questions, story points explained, planning poker help, estimation techniques',
+  alternates: {
+    canonical: '/faq',
+  },
   openGraph: {
     title: 'Planning Poker FAQ - Your Questions Answered',
     description: 'Find answers to the most common questions about planning poker and agile estimation.',
     type: 'website',
+    url: '/faq',
+    images: [DEFAULT_OG_IMAGE],
   },
 }
 
@@ -178,15 +184,6 @@ export default function FAQPage() {
             </svg>
             FAQ
           </Link>
-          <Link
-            href="/analytics"
-            className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            Analytics
-          </Link>
           <ThemeToggle />
         </div>
       </nav>
@@ -294,12 +291,6 @@ export default function FAQPage() {
                 className="text-sm text-blue-600 dark:text-blue-400 font-medium"
               >
                 FAQ
-              </Link>
-              <Link
-                href="/analytics"
-                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              >
-                Analytics
               </Link>
               <Link
                 href="/legal"

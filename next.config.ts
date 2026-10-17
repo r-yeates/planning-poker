@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // The e2e tests build into their own directory so they can run next to a normal `next dev`
+  distDir: process.env.NEXT_DIST_DIR || '.next',
+
   // firebase-admin must run in Node.js — prevent Next.js from bundling it
   serverExternalPackages: ['firebase-admin', 'firebase-admin/app', 'firebase-admin/firestore', '@google-cloud/firestore', '@opentelemetry/api'],
 

@@ -6,6 +6,7 @@ import { FEATURES, type FeatureName } from '@/lib/features';
 import { ESTIMATION_SCALES, type ScaleType } from '@/lib/estimation-scales';
 import { hashPassword, verifyPassword, type StoredPassword } from '@/lib/room-passwords';
 import { getActiveVoterIds, isParticipantActive, SPECIAL_VOTES } from '@/lib/room-shared';
+import { checkRateLimit, ACTION_LIMITS, IP_LIMITS } from '@/lib/rate-limit';
 import { parseTicketLine, parseTicketList, MAX_BACKLOG, type ParsedTicket, type Ticket } from '@/lib/tickets';
 
 export const runtime = 'nodejs';
@@ -29,7 +30,7 @@ const PASSWORD_MAX_FAILURES = 10;
 const FIRESTORE_ALREADY_EXISTS = 6;
 
 class ApiError extends Error {
-  constructor(public status: number, message: string, public code?: string) {
+  constructor(public status: number, message: string, public code?: string, public retryAfterSec?: number) {
     super(message);
   }
 }
@@ -70,6 +71,7 @@ const MAX_HISTORY = 200;
 
 interface AccessDoc extends Partial<StoredPassword> {
   creatorId?: string;
+  banned?: string[];
   failures?: number;
   windowStart?: number;
 }
@@ -112,6 +114,26 @@ function roomRefFor(db: Firestore, body: Body) {
   const code = str(body, 'roomCode', 10).toUpperCase();
   if (!CODE_PATTERN.test(code)) throw new ApiError(400, 'Invalid room code');
   return db.collection('rooms').doc(code);
+}
+
+const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost']);
+
+/** The caller's IP, or null when it can't be told apart from other callers (no header, or loopback). */
+function clientIp(req: NextRequest): string | null {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip')?.trim();
+  return ip && !LOOPBACK.has(ip) ? ip : null;
+}
+
+/** Throws a 429 when this user (or, for create/join, this IP) is acting too fast. */
+function enforceRateLimit(req: NextRequest, uid: string, action: string) {
+  const checks = [checkRateLimit(`u:${uid}:${action}`, ACTION_LIMITS[action] ?? ACTION_LIMITS.default)];
+  // Without a real client IP every caller would share one bucket, so skip the IP cap rather than throttle everyone
+  const ip = clientIp(req);
+  if (ip && IP_LIMITS[action]) checks.push(checkRateLimit(`ip:${ip}:${action}`, IP_LIMITS[action]));
+  const blocked = checks.find((c) => !c.allowed);
+  if (blocked) {
+    throw new ApiError(429, `Too many requests. Try again in ${blocked.retryAfterSec}s.`, 'too_many_requests', blocked.retryAfterSec);
+  }
 }
 
 // ---------- room helpers ----------
@@ -271,6 +293,9 @@ const handlers: Record<string, Handler> = {
     const access = (accessSnap.data() || {}) as AccessDoc;
 
     if (!room.participants?.[uid]) {
+      if (access.banned?.includes(uid)) {
+        throw new ApiError(403, 'You were removed from this room by the host.', 'removed');
+      }
       // The creator's first join skips the lock and password checks
       const isCreatorFirstJoin = access.creatorId === uid && Object.keys(room.participants || {}).length === 0;
       if (room.isLocked && !isCreatorFirstJoin) {
@@ -523,6 +548,8 @@ const handlers: Record<string, Handler> = {
         ...touch(),
       });
       tx.delete(ref.collection('votes').doc(target));
+      // Removed participants can't simply rejoin (the list lives in the server-only access doc)
+      tx.set(ref.collection('private').doc('access'), { banned: FieldValue.arrayUnion(target) }, { merge: true });
     });
     return { ok: true };
   },
@@ -657,10 +684,14 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as Body;
     const handler = typeof body.action === 'string' && Object.hasOwn(handlers, body.action) ? handlers[body.action] : null;
     if (!handler) throw new ApiError(400, 'Unknown action');
+    enforceRateLimit(req, uid, body.action as string);
     return NextResponse.json(await handler(adminDb(), uid, body));
   } catch (err) {
     if (err instanceof ApiError) {
-      return NextResponse.json({ error: err.message, code: err.code }, { status: err.status });
+      return NextResponse.json(
+        { error: err.message, code: err.code },
+        { status: err.status, headers: err.retryAfterSec ? { 'Retry-After': String(err.retryAfterSec) } : undefined }
+      );
     }
     console.error('room action error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

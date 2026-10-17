@@ -100,7 +100,7 @@ const ParticipantCard = ({
   };
 
   return (
-    <div className={`bg-white dark:bg-[#212121] rounded-lg border p-3 transition-all hover:shadow-md group ${getBorderColor()} ${isActive ? '' : 'opacity-60'}`}>
+    <div data-testid="participant-card" className={`bg-white dark:bg-[#212121] rounded-lg border p-3 transition-all hover:shadow-md group ${getBorderColor()} ${isActive ? '' : 'opacity-60'}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0 flex items-center gap-3">
           {/* Avatar */}

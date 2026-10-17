@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { getAuth, signInAnonymously } from 'firebase/auth';
+import { getFirestore, doc, getDoc, connectFirestoreEmulator } from 'firebase/firestore';
+import { getAuth, signInAnonymously, connectAuthEmulator } from 'firebase/auth';
 import type { ScaleType } from './estimation-scales';
 import type { Ticket } from './tickets';
 
@@ -18,13 +18,30 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-/** Sign in anonymously and return the Firebase UID. */
-export const ensureAnonymousAuth = async (): Promise<string> => {
-  // Wait for Firebase Auth to restore persisted state before checking currentUser
-  await auth.authStateReady();
-  if (auth.currentUser) return auth.currentUser.uid;
-  const { user } = await signInAnonymously(auth);
-  return user.uid;
+// Local emulators for the e2e tests (see playwright.config.ts); never set in production
+if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true') {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+}
+
+let signInInFlight: Promise<string> | null = null;
+
+/**
+ * Sign in anonymously and return the Firebase UID. Concurrent callers share one sign-in;
+ * otherwise each would create its own anonymous user and the page could track a different
+ * user from the one its API calls are made as.
+ */
+export const ensureAnonymousAuth = (): Promise<string> => {
+  signInInFlight ??= (async () => {
+    // Wait for Firebase Auth to restore persisted state before checking currentUser
+    await auth.authStateReady();
+    if (auth.currentUser) return auth.currentUser.uid;
+    const { user } = await signInAnonymously(auth);
+    return user.uid;
+  })().finally(() => {
+    signInInFlight = null;
+  });
+  return signInInFlight;
 };
 
 // Types for our Firestore data

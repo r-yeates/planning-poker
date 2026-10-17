@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# playwright / firebase emulators
+/test-results/
+/playwright-report/
+*-debug.log
+/.next-e2e/
+/.next-e2e-features/

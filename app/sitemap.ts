@@ -1,52 +1,49 @@
 import { MetadataRoute } from 'next'
+import { SITE_URL } from '@/lib/site'
+
+// Update these dates when the page content actually changes; a lastModified that
+// changes on every build teaches Google to ignore it.
+const blogPosts = [
+  { slug: 'planning-poker-basics', date: '2025-06-20' },
+  { slug: 'common-estimation-mistakes', date: '2025-06-18' },
+  { slug: 'remote-planning-poker', date: '2025-06-15' },
+  { slug: 'fibonacci-vs-tshirt', date: '2025-06-12' },
+  { slug: 'facilitating-sessions', date: '2025-06-10' },
+  { slug: 'story-point-calibration', date: '2025-06-08' },
+]
+
+const latestPost = blogPosts.map(p => p.date).sort().at(-1)
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const blogPosts = [
-    'planning-poker-basics',
-    'common-estimation-mistakes', 
-    'remote-planning-poker',
-    'fibonacci-vs-tshirt',
-    'facilitating-sessions',
-    'story-point-calibration'
-  ]
-
-  const staticPages = [
+  const staticPages: MetadataRoute.Sitemap = [
     {
-      url: 'https://Sprintro.dev',
-      lastModified: new Date(),
-      changeFrequency: 'daily' as const,
+      url: SITE_URL,
+      lastModified: '2026-10-17',
+      changeFrequency: 'weekly',
       priority: 1,
     },
     {
-      url: 'https://Sprintro.dev/blog',
-      lastModified: new Date(),
-      changeFrequency: 'weekly' as const,
+      url: `${SITE_URL}/blog`,
+      lastModified: latestPost,
+      changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
-      url: 'https://Sprintro.dev/faq',
-      lastModified: new Date(),
-      changeFrequency: 'monthly' as const,
+      url: `${SITE_URL}/faq`,
+      changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
-      url: 'https://Sprintro.dev/legal',
-      lastModified: new Date(),
-      changeFrequency: 'monthly' as const,
-      priority: 0.5,
-    },
-    {
-      url: 'https://Sprintro.dev/analytics',
-      lastModified: new Date(),
-      changeFrequency: 'weekly' as const,
+      url: `${SITE_URL}/legal`,
+      changeFrequency: 'yearly',
       priority: 0.3,
     },
   ]
 
-  const blogPages = blogPosts.map(slug => ({
-    url: `https://Sprintro.dev/blog/${slug}`,
-    lastModified: new Date(),
-    changeFrequency: 'monthly' as const,
+  const blogPages: MetadataRoute.Sitemap = blogPosts.map(({ slug, date }) => ({
+    url: `${SITE_URL}/blog/${slug}`,
+    lastModified: date,
+    changeFrequency: 'monthly',
     priority: 0.6,
   }))
 

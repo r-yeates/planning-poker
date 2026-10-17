@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { DEFAULT_OG_IMAGE } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'FAQ - Planning Poker Questions & Answers',
@@ -7,6 +8,11 @@ export const metadata: Metadata = {
     title: 'Planning Poker FAQ - Common Questions Answered',
     description: 'Get expert answers to your planning poker and agile estimation questions.',
     type: 'website',
+    url: '/faq',
+    images: [DEFAULT_OG_IMAGE],
+  },
+  alternates: {
+    canonical: '/faq',
   },
 }
 

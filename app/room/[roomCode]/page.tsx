@@ -12,6 +12,7 @@ import { HEARTBEAT_MS, getActiveVoterIds, isParticipantActive } from '@/lib/room
 import type { Room } from '@/lib/firebase';
 import { ESTIMATION_SCALES, type ScaleType } from '@/lib/estimation-scales';
 
+import { useConfirm } from '@/app/components/global/ConfirmDialog';
 import NamePrompt from '@/app/components/room/NamePrompt';
 import ThemeToggle from '@/app/components/global/ThemeToggle';
 import ParticipantCard from '@/app/components/room/ParticipantCard';
@@ -29,6 +30,40 @@ import EstimateControls from '@/app/components/room/EstimateControls';
 import SessionSummary from '@/app/components/room/SessionSummary';
 
 
+function RoomSkeleton() {
+  const block = 'bg-slate-200 dark:bg-[#303030] rounded animate-pulse';
+  return (
+    <div className="min-h-screen p-4 sm:p-8 bg-slate-50 dark:bg-[#0f0f0f]" role="status" aria-label="Loading room">
+      <div className="max-w-7xl mx-auto mb-8 flex items-center justify-between">
+        <div className={`${block} h-8 w-36`} />
+        <div className={`${block} h-10 w-40`} />
+      </div>
+      <div className="max-w-7xl mx-auto grid lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white dark:bg-[#212121] rounded-lg shadow border border-slate-200 dark:border-[#303030] p-3 space-y-3">
+            <div className={`${block} h-4 w-2/3`} />
+            <div className={`${block} h-16 w-full`} />
+          </div>
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="bg-white dark:bg-[#212121] rounded-lg border border-slate-200 dark:border-[#303030] p-3 flex items-center gap-3">
+                <div className={`${block} h-8 w-8 rounded-full`} />
+                <div className={`${block} h-4 flex-1`} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="lg:col-span-3 grid grid-cols-4 sm:grid-cols-6 gap-3 content-start">
+          {Array.from({ length: 12 }, (_, i) => (
+            <div key={i} className={`${block} h-28`} />
+          ))}
+        </div>
+      </div>
+      <span className="sr-only">Loading room…</span>
+    </div>
+  );
+}
+
 export default function RoomPage() {
   const { roomCode } = useParams();
   const router = useRouter();
@@ -42,6 +77,7 @@ export default function RoomPage() {
   const joinInFlightRef = useRef(false);
   const awaitingJoinSnapshotRef = useRef(false); // join succeeded; the room snapshot hasn't caught up yet
   const actionErrorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const voteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const [copied, setCopied] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -57,6 +93,8 @@ export default function RoomPage() {
   const previousRoundStateRef = useRef<{votesRevealed: boolean; hasVotes: boolean} | null>(null);
   const [isLeavingRoom, setIsLeavingRoom] = useState(false);
   const [isRoomSettingsCollapsed, setIsRoomSettingsCollapsed] = useState(true);
+  const [wasRemoved, setWasRemoved] = useState(false);
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   
 
@@ -77,9 +115,10 @@ export default function RoomPage() {
     if (!room || !userId || !wasInRoom) return;
     
     // If user was in room but is no longer a participant, they were kicked
-    if (!room.participants[userId]) {
-      router.push('/');
-    }  }, [room?.participants, userId, wasInRoom, router]);
+    if (!room.participants[userId] && !isLeavingRoom) {
+      setWasRemoved(true);
+    }
+  }, [room?.participants, userId, wasInRoom, isLeavingRoom]);
 
   // Subscribe to the room (room documents are keyed by their code)
   useEffect(() => {
@@ -179,8 +218,9 @@ export default function RoomPage() {
       setWasInRoom(true);
       setShowNamePrompt(false);
     } else {
-      // Heartbeat snapshots keep arriving mid-join; don't flash the prompt over an in-flight join
-      if (joinInFlightRef.current || awaitingJoinSnapshotRef.current) return;
+      // Heartbeat snapshots keep arriving mid-join; don't flash the prompt over an in-flight join.
+      // While leaving, the snapshot without us must not start the join flow again either.
+      if (joinInFlightRef.current || awaitingJoinSnapshotRef.current || isLeavingRoom) return;
       const isVerified = sessionStorage.getItem('roomJoinVerified');
       const userName = localStorage.getItem('userName');
       
@@ -196,7 +236,7 @@ export default function RoomPage() {
         setHasJoined(false);
       }
     }
-  }, [room?.participants, userId, roomCode]);
+  }, [room?.participants, userId, roomCode, isLeavingRoom]);
 
   // Check if Web Share API is available
   useEffect(() => {
@@ -282,7 +322,9 @@ export default function RoomPage() {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
-      alert('Failed to copy link. Please copy it manually.');
+      setActionError('Failed to copy link. Please copy it manually.');
+      if (actionErrorTimeoutRef.current) clearTimeout(actionErrorTimeoutRef.current);
+      actionErrorTimeoutRef.current = setTimeout(() => setActionError(''), 6000);
     }
   };
 
@@ -312,8 +354,11 @@ export default function RoomPage() {
 
     const previous = selectedCard;
     setSelectedCard(value); // optimistic; the own-vote listener confirms
-    const ok = await runAction('vote', { value }, 'Your vote was not saved. Please try again.');
-    if (!ok) setSelectedCard(previous);
+    // Send votes one at a time: concurrent vote transactions can commit out of order,
+    // so a quick 3 → 21 change could otherwise end up saved as 3
+    const send = voteQueueRef.current.then(() => runAction('vote', { value }, 'Your vote was not saved. Please try again.'));
+    voteQueueRef.current = send.then(() => undefined);
+    if (!(await send)) setSelectedCard(previous);
   };
 
   const handleNameSubmit = useCallback(async (name: string, password?: string) => {
@@ -342,6 +387,7 @@ export default function RoomPage() {
       await roomAction('join', { roomCode: room.roomCode, name, password: submittedPassword });
       sessionStorage.removeItem(storedPasswordKey);
       sessionStorage.removeItem('roomCreator');
+      sessionStorage.removeItem('roomJoinVerified'); // consumed; a stale flag would auto-rejoin after leaving
       localStorage.setItem('userName', name);
       setNeedsPassword(false);
       setHasJoined(true);
@@ -356,6 +402,8 @@ export default function RoomPage() {
         setNeedsPassword(true);
         setPasswordError(apiError.code === 'wrong_password' ? 'Incorrect password' : 'This room requires a password');
         setShowNamePrompt(true);
+      } else if (apiError?.code === 'removed') {
+        setWasRemoved(true);
       } else if (apiError?.code === 'rate_limited') {
         setNeedsPassword(true);
         setPasswordError(apiError.message);
@@ -396,7 +444,7 @@ export default function RoomPage() {
   // Skip: records a revealed round without an estimate, then moves to the next ticket
   const handleReset = async () => {
     if (!isAdmin) return;
-    if (roundInProgress && !window.confirm('Votes have been cast but not revealed. Move on and discard them?')) return;
+    if (roundInProgress && !(await confirm({ title: 'Move on?', message: 'Votes have been cast but not revealed. Moving on discards them.', confirmLabel: 'Discard and continue', destructive: true }))) return;
     if (await runAction('newRound', {}, 'Could not start a new round. Please try again.')) {
       setSelectedCard(null);
     }
@@ -443,6 +491,13 @@ export default function RoomPage() {
 
   const handleLeaveRoom = async () => {
     if (!room || !roomId || !userId) return;
+    const left = await confirm({
+      title: 'Leave the room?',
+      message: isAdmin ? 'The host role will pass to another participant.' : undefined,
+      confirmLabel: 'Leave',
+      destructive: true,
+    });
+    if (!left) return;
 
     setIsLeavingRoom(true); // Prevent error states while leaving
 
@@ -464,9 +519,13 @@ export default function RoomPage() {
   };
 
   // Room settings (host only; enforced again on the server)
-  const updateRoomSetting = (patch: Record<string, boolean>) => {
-    if (!isAdmin) return;
-    return runAction('settings', { patch }, 'Could not update that setting.');
+  const updateRoomSetting = async (patch: Record<string, boolean>) => {
+    if (!isAdmin || !room) return;
+    // Apply immediately so the toggle feels instant; the snapshot confirms it, and a failure rolls it back
+    const previous = Object.fromEntries(Object.keys(patch).map((key) => [key, room[key as keyof Room]]));
+    setRoom((current) => (current ? { ...current, ...patch } : current));
+    const ok = await runAction('settings', { patch }, 'Could not update that setting.');
+    if (!ok) setRoom((current) => (current ? { ...current, ...previous } : current));
   };
 
   const toggleAutoReveal = () => room && updateRoomSetting({ autoReveal: !room.autoReveal });
@@ -479,7 +538,7 @@ export default function RoomPage() {
     if (!room || !isAdmin || newScale === room.scaleType) return;
     // Changing the scale clears the round, so confirm if there is anything to lose
     const hasVotes = Object.keys(room.voted || {}).length > 0 || Object.keys(room.votes || {}).length > 0;
-    if (hasVotes && !window.confirm('Changing the scale clears the current votes. Continue?')) return;
+    if (hasVotes && !(await confirm({ title: 'Change scale?', message: 'Changing the scale clears the current votes.', confirmLabel: 'Change scale', destructive: true }))) return;
     if (await runAction('changeScale', { scaleType: newScale }, 'Could not change the scale.')) {
       setSelectedCard(null);
     }
@@ -487,12 +546,13 @@ export default function RoomPage() {
 
   // Auto-join effect for users coming from home page
   useEffect(() => {
-    if (room && roomId && userId && !room.participants[userId] && !showNamePrompt && !hasJoined) {
+    if (room && roomId && userId && !room.participants[userId] && !showNamePrompt && !hasJoined && !isLeavingRoom && !wasRemoved) {
       const userName = localStorage.getItem('userName');
       if (userName) {
         handleNameSubmit(userName);
       }
-    }  }, [room?.participants, roomId, userId, showNamePrompt, hasJoined, handleNameSubmit]);
+    }
+  }, [room?.participants, roomId, userId, showNamePrompt, hasJoined, isLeavingRoom, wasRemoved, handleNameSubmit]);
   // Calculate voting stats excluding spectators
   // Active voters only: spectators and participants who went away don't hold up the round
   const activeVoterIds = room ? getActiveVoterIds(room, now) : [];
@@ -500,15 +560,24 @@ export default function RoomPage() {
   const votedCount = activeVoterIds.filter((id) => room?.voted?.[id]).length;
   const allVotersHaveVoted = voterCount > 0 && votedCount === voterCount;
 
-  if (isLoading) {
+  if (wasRemoved) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Loading room...</h1>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="text-center max-w-sm">
+          <h1 className="text-2xl font-bold mb-2 text-slate-900 dark:text-[#f1f1f1]">You were removed</h1>
+          <p className="text-slate-600 dark:text-[#aaaaaa]">The host removed you from this room, so you can&apos;t rejoin it.</p>
+          <button
+            onClick={() => router.push('/')}
+            className="mt-4 px-4 py-2 bg-[#3b82f6] text-white rounded hover:bg-[#2563eb] shadow-md transition-all duration-200"
+          >
+            Back to home
+          </button>
         </div>
       </div>
     );
   }
+
+  if (isLoading) return <RoomSkeleton />;
 
   if (error && !isLeavingRoom) {
     return (
@@ -540,15 +609,7 @@ export default function RoomPage() {
     );
   }
 
-  if (!room) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Loading room...</h1>
-        </div>
-      </div>
-    );
-  }  // Room age warning (> 24 hours)
+  if (!room) return <RoomSkeleton />;  // Room age warning (> 24 hours)
   const createdAtMs = room.createdAt
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ? (typeof (room.createdAt as any).toMillis === 'function' ? (room.createdAt as any).toMillis() : new Date(room.createdAt as string | Date).getTime())
@@ -557,11 +618,11 @@ export default function RoomPage() {
 
   return (
     <>
-    <div className="min-h-screen p-8 bg-slate-50 dark:bg-[#0f0f0f]">
+    <div className="min-h-screen p-4 sm:p-8 bg-slate-50 dark:bg-[#0f0f0f]">
       {/* Header - Wide Container */}
       <div className="max-w-7xl mx-auto mb-8">
         {/* Header with theme toggle */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-y-3 gap-x-2">
           <div className="flex items-center gap-3">
             <span className="relative w-8 h-8">
               <Image src="/logo-dark.png" alt="Sprintro Logo" width={32} height={32} className="rounded-lg block dark:hidden" />
@@ -570,7 +631,7 @@ export default function RoomPage() {
             <h1 className="text-2xl font-bold text-slate-900 dark:text-[#f1f1f1]">Sprintro</h1>
           </div>
             {/* Room Info and Admin Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ThemeToggle />
             
             {/* Timer Button - Show to everyone when running, admin controls when not */}
@@ -645,6 +706,7 @@ export default function RoomPage() {
                     : 'bg-white dark:bg-[#212121] border-slate-200 dark:border-[#303030] text-slate-600 dark:text-[#aaaaaa] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#303030]'
                 }`}
                 title={room.participants[userId].role === 'spectator' ? 'Switch to Voting Mode' : 'Switch to Spectator Mode'}
+                aria-pressed={room.participants[userId].role === 'spectator'}
               >
                 {room.participants[userId].role === 'spectator' ? (
                   <>
@@ -652,7 +714,7 @@ export default function RoomPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                    <span className="text-sm">Voting</span>
+                    <span className="text-sm">Spectating</span>
                   </>
                 ) : (
                   <>
@@ -660,7 +722,7 @@ export default function RoomPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                    <span className="text-sm">Spectate</span>
+                    <span className="text-sm">Voting</span>
                   </>
                 )}
               </button>            )}
@@ -697,7 +759,7 @@ export default function RoomPage() {
 
       {/* Body Content - 2 Column Layout */}
       <div className="max-w-7xl mx-auto">        <div className="grid lg:grid-cols-4 gap-6">          {/* Left Column - Voting Info & Participants */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1 space-y-6 order-2 lg:order-1">
             {/* Vote Progress, Current Ticket & Room Settings - Combined */}
             <div className="bg-white dark:bg-[#212121] rounded-lg shadow border border-slate-200 dark:border-[#303030]">
               {/* Vote Progress */}
@@ -709,6 +771,29 @@ export default function RoomPage() {
               {FEATURES.ticketEntry && (room.ticket || isAdmin) && (
                 <div className="px-3 py-2 border-t border-slate-200 dark:border-[#303030]">
                   <TicketPanel ticket={room.ticket} isAdmin={isAdmin} onSave={handleSetTicket} />
+                </div>
+              )}
+
+              {/* Read-only summary of the room's settings for everyone but the host */}
+              {!isAdmin && (
+                <div className="px-3 py-2 border-t border-slate-200 dark:border-[#303030] flex flex-wrap gap-1.5" aria-label="Room settings">
+                  {[
+                    { label: ESTIMATION_SCALES[room.scaleType || 'fibonacci'].name, on: true },
+                    { label: 'Auto-reveal', on: !!room.autoReveal },
+                    { label: 'Anonymous voting', on: !!room.anonymousVoting },
+                    { label: 'Locked', on: !!room.isLocked },
+                  ].map(({ label, on }) => (
+                    <span
+                      key={label}
+                      className={`text-xs px-2 py-0.5 rounded-full border ${
+                        on
+                          ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700/50 text-blue-700 dark:text-blue-300'
+                          : 'bg-slate-50 dark:bg-[#181818] border-slate-200 dark:border-[#303030] text-slate-400 dark:text-[#777777] line-through'
+                      }`}
+                    >
+                      {label}
+                    </span>
+                  ))}
                 </div>
               )}
 
@@ -787,7 +872,7 @@ export default function RoomPage() {
                         <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-[#181818] rounded">
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-slate-900 dark:text-[#f1f1f1]">Anonymous voting</div>
-                            <div className="text-xs text-slate-500 dark:text-[#888888]">Hide names during voting</div>
+                            <div className="text-xs text-slate-500 dark:text-[#888888]">Hides names in the UI only; revealed votes still carry user ids</div>
                           </div>
                           <button
                             onClick={toggleAnonymousVoting}
@@ -896,7 +981,7 @@ export default function RoomPage() {
             )}
 
             {/* Chat — visible on desktop in left column; on mobile it sits here in flow */}
-            {/* {hasJoined && roomId && userId && room.participants[userId] && (
+            {hasJoined && roomId && userId && room.participants[userId] && (
               <div className="hidden lg:block">
                 <RoomChat
                   roomId={roomId}
@@ -904,7 +989,7 @@ export default function RoomPage() {
                   userName={room.participants[userId].name}
                 />
               </div>
-            )} */}
+            )}
 
             {/* Participants Section */}
             <div>
@@ -953,7 +1038,7 @@ export default function RoomPage() {
           </div>
 
           {/* Right Column - Game Content (Large) */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-6 order-1 lg:order-2">
         {/* Vote Statistics */}
         <VoteStats room={room} />
 
@@ -1049,7 +1134,9 @@ export default function RoomPage() {
         
         {/* End 2-Column Grid */}
         </div>
-      </div>      {/* Action error toast */}
+      </div>      {confirmDialog}
+
+      {/* Action error toast */}
       {actionError && (
         <div role="alert" className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-[90vw] flex items-center gap-3 px-4 py-3 rounded-lg bg-red-600 text-white shadow-lg text-sm">
           <span>{actionError}</span>
@@ -1059,7 +1146,7 @@ export default function RoomPage() {
 
       {/* New Round Notification */}
       {showNewRoundNotification && (
-        <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-500 ease-out ${
+        <div role="status" aria-live="polite" aria-label="New round started" className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-500 ease-out ${
           isNotificationVisible 
             ? 'translate-y-0 opacity-100' 
             : '-translate-y-full opacity-0'
@@ -1076,6 +1163,7 @@ export default function RoomPage() {
             </div>
             <button
               onClick={handleCloseNotification}
+              aria-label="Dismiss notification"
               className="ml-2 p-1 text-green-200 hover:text-white hover:bg-white/10 rounded-full transition-all duration-200"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -4,6 +4,7 @@ import { memo, useMemo, useState } from 'react';
 import { parseTicketList, MAX_BACKLOG, type Ticket } from '@/lib/tickets';
 import type { RoundResult } from '@/lib/firebase';
 import { TicketBadge, TicketLink } from './TicketPanel';
+import { useConfirm } from '@/app/components/global/ConfirmDialog';
 
 interface BacklogPanelProps {
   backlog: Ticket[];
@@ -22,6 +23,7 @@ function BacklogPanel({ backlog, ticketIndex, history, isAdmin, roundInProgress,
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const parsed = useMemo(() => parseTicketList(draft), [draft]);
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   // Latest recorded estimate per ticket id
   const estimates = useMemo(() => {
@@ -34,14 +36,14 @@ function BacklogPanel({ backlog, ticketIndex, history, isAdmin, roundInProgress,
 
   if (!isAdmin && backlog.length === 0) return null;
 
-  const goTo = (index: number) => {
+  const goTo = async (index: number) => {
     if (!isAdmin || index === ticketIndex) return;
-    if (roundInProgress && !window.confirm('Votes have been cast for the current ticket. Switch tickets and discard them?')) return;
+    if (roundInProgress && !(await confirm({ title: 'Switch tickets?', message: 'Votes have been cast for the current ticket. Switching discards them.', confirmLabel: 'Switch', destructive: true }))) return;
     onGoTo(index);
   };
 
   const submit = async (mode: 'append' | 'replace') => {
-    if (mode === 'replace' && backlog.length > 0 && !window.confirm(`Replace all ${backlog.length} tickets in the backlog?`)) return;
+    if (mode === 'replace' && backlog.length > 0 && !(await confirm({ title: 'Replace backlog?', message: `This replaces all ${backlog.length} tickets in the backlog.`, confirmLabel: 'Replace', destructive: true }))) return;
     setSaving(true);
     const ok = await onAdd(draft, mode);
     setSaving(false);
@@ -56,6 +58,7 @@ function BacklogPanel({ backlog, ticketIndex, history, isAdmin, roundInProgress,
 
   return (
     <div className="bg-white dark:bg-[#212121] rounded-lg shadow border border-slate-200 dark:border-[#303030]">
+      {confirmDialog}
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 dark:border-[#303030]">
         <h3 className="text-sm font-semibold text-slate-800 dark:text-[#f1f1f1]">
           Backlog {backlog.length > 0 && <span className="font-normal text-slate-500">({estimates.size}/{backlog.length} estimated)</span>}

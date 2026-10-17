@@ -5,6 +5,11 @@ import { getAuth } from 'firebase-admin/auth';
 function getAdminApp() {
   if (getApps().length > 0) return getApps()[0];
 
+  // The emulators need no credentials; the Admin SDK finds them through the *_EMULATOR_HOST variables
+  if (process.env.FIRESTORE_EMULATOR_HOST && process.env.FIREBASE_AUTH_EMULATOR_HOST) {
+    return initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID });
+  }
+
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (!serviceAccountJson) {
     throw new Error(
