@@ -1,4 +1,4 @@
-import { test, expect, startRoom, vote, confirmDialog, addBacklog } from '../support/fixtures';
+import { test, expect, startRoom, vote, confirmDialog, addBacklog, openTab } from '../support/fixtures';
 import type { Page } from '@playwright/test';
 
 const TICKETS = ['ABC-1 Login page', 'ABC-2 Password reset', 'https://github.com/acme/web/issues/42 Dark mode'];
@@ -17,6 +17,7 @@ test.describe('backlog', () => {
     await expect(guest.getByRole('heading', { name: /^Backlog/ })).toHaveCount(0); // hidden from guests while empty
 
     await addBacklog(host, TICKETS);
+    await openTab(guest, 'Backlog');
     await expect(guest.getByRole('heading', { name: 'Backlog (0/3 estimated)' })).toBeVisible();
     await expect(backlogItems(guest)).toHaveCount(3);
     await expect(currentItem(guest)).toContainText('Login page');
@@ -79,6 +80,7 @@ test.describe('backlog', () => {
 
   test('the add button is disabled until tickets are detected', async ({ newPlayer }) => {
     const { host } = await startRoom(newPlayer, []);
+    await openTab(host, 'Backlog');
     await host.getByRole('button', { name: '+ Add' }).click();
     await expect(host.getByText('0 tickets detected')).toBeVisible();
     await expect(host.getByRole('button', { name: 'Add to backlog' })).toBeDisabled();

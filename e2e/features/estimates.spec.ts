@@ -1,5 +1,5 @@
 import { readFile } from 'fs/promises';
-import { test, expect, startRoom, vote, reveal, participant, addBacklog } from '../support/fixtures';
+import { test, expect, startRoom, vote, reveal, participant, addBacklog, openTab } from '../support/fixtures';
 
 function estimate(page: import('@playwright/test').Page, value: string | number) {
   return page.getByRole('radiogroup', { name: 'Final estimate' }).getByRole('radio', { name: String(value), exact: true });
@@ -54,6 +54,7 @@ test.describe('final estimates', () => {
     await host.getByRole('button', { name: 'Save & next ticket' }).click();
     await expect(guest.getByRole('status', { name: 'New round started' })).toBeVisible();
     await expect(guest.locator('ol > li[aria-current="true"]')).toContainText('Password reset');
+    await openTab(guest, 'Backlog');
     await expect(guest.getByRole('heading', { name: 'Backlog (1/3 estimated)' })).toBeVisible();
 
     // Ticket 2: skipped after reveal

@@ -7,7 +7,7 @@ import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db, ensureAnonymousAuth } from '@/lib/firebase';
 import { roomAction, RoomApiError } from '@/lib/room-api';
 import { FEATURES } from '@/lib/features';
-import { HEARTBEAT_MS, getActiveVoterIds, isParticipantActive } from '@/lib/room-shared';
+import { HEARTBEAT_MS, getActiveVoterIds } from '@/lib/room-shared';
 
 import type { Room } from '@/lib/firebase';
 import { ESTIMATION_SCALES, type ScaleType } from '@/lib/estimation-scales';
@@ -15,7 +15,6 @@ import { ESTIMATION_SCALES, type ScaleType } from '@/lib/estimation-scales';
 import { useConfirm } from '@/app/components/global/ConfirmDialog';
 import NamePrompt from '@/app/components/room/NamePrompt';
 import ThemeToggle from '@/app/components/global/ThemeToggle';
-import ParticipantCard from '@/app/components/room/ParticipantCard';
 import VotingCards from '@/app/components/room/VotingCards';
 import VoteProgressIndicator from '@/app/components/room/VoteProgressIndicator';
 import KeyboardShortcuts from '@/app/components/room/KeyboardShortcuts';
@@ -23,7 +22,12 @@ import { triggerVoteRevealConfetti } from '@/app/components/room/ConfettiCelebra
 import VoteStats from '@/app/components/room/VoteStats';
 import VotingTimer from '@/app/components/room/VotingTimer';
 import ShareRoomModal from '@/app/components/room/ShareRoomModal';
+import { useToasts } from '@/app/components/global/Toast';
+import HostSettings from '@/app/components/room/HostSettings';
 import RoomChat from '@/app/components/room/RoomChat';
+import SideRail from '@/app/components/room/SideRail';
+import ParticipantStrip from '@/app/components/room/ParticipantStrip';
+import ParticipantList from '@/app/components/room/ParticipantList';
 import TicketPanel from '@/app/components/room/TicketPanel';
 import BacklogPanel from '@/app/components/room/BacklogPanel';
 import EstimateControls from '@/app/components/room/EstimateControls';
@@ -72,29 +76,25 @@ export default function RoomPage() {
   const [room, setRoom] = useState<Room | null>(null);
   const [selectedCard, setSelectedCard] = useState<number | string | null>(null);
   const [error, setError] = useState('');
-  const [actionError, setActionError] = useState('');
   const [needsPassword, setNeedsPassword] = useState(false);
   const joinInFlightRef = useRef(false);
   const awaitingJoinSnapshotRef = useRef(false); // join succeeded; the room snapshot hasn't caught up yet
-  const actionErrorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const voteQueueRef = useRef<Promise<void>>(Promise.resolve());
-  const [copied, setCopied] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
   const [joining, setJoining] = useState(false);
-  const [canShare, setCanShare] = useState(false);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [hasJoined, setHasJoined] = useState(false);
   const [wasInRoom, setWasInRoom] = useState(false); // Track if user was ever in the room
-  const [showNewRoundNotification, setShowNewRoundNotification] = useState(false);
-  const [isNotificationVisible, setIsNotificationVisible] = useState(false);
   const previousRoundStateRef = useRef<{votesRevealed: boolean; hasVotes: boolean} | null>(null);
   const [isLeavingRoom, setIsLeavingRoom] = useState(false);
   const [isRoomSettingsCollapsed, setIsRoomSettingsCollapsed] = useState(true);
   const [wasRemoved, setWasRemoved] = useState(false);
   const { confirm, dialog: confirmDialog } = useConfirm();
+  const { show: showToast, region: toastRegion } = useToasts();
 
   
 
@@ -153,10 +153,8 @@ export default function RoomPage() {
   // Show a transient error for failed actions instead of failing silently
   const showActionError = useCallback((err: unknown, fallback: string) => {
     console.error(fallback, err);
-    setActionError(err instanceof RoomApiError ? err.message : fallback);
-    if (actionErrorTimeoutRef.current) clearTimeout(actionErrorTimeoutRef.current);
-    actionErrorTimeoutRef.current = setTimeout(() => setActionError(''), 6000);
-  }, []);
+    showToast({ kind: 'error', key: 'action-error', title: err instanceof RoomApiError ? err.message : fallback, duration: 6000 });
+  }, [showToast]);
 
   // Run a room action, reporting failures. Returns true on success.
   const runAction = useCallback(
@@ -238,10 +236,7 @@ export default function RoomPage() {
     }
   }, [room?.participants, userId, roomCode, isLeavingRoom]);
 
-  // Check if Web Share API is available
-  useEffect(() => {
-    setCanShare(typeof navigator !== 'undefined' && 'share' in navigator);
-  }, []);  // Detect new round and show notification
+  // Detect new round and show notification
   useEffect(() => {
     if (!room || !hasJoined) return;
     
@@ -255,25 +250,20 @@ export default function RoomPage() {
       const isNewRound = previousRoundStateRef.current.votesRevealed === true && 
                         previousRoundStateRef.current.hasVotes === true &&
                         currentState.votesRevealed === false && 
-                        currentState.hasVotes === false;                          if (isNewRound && !showNewRoundNotification) {
-        setShowNewRoundNotification(true);
-
-        // Trigger enter animation with a slight delay for smoother effect
-        setTimeout(() => {
-          setIsNotificationVisible(true);
-        }, 50);
-        
-        // Auto-hide notification after 4 seconds (longer visibility)
-        setTimeout(() => {
-          setIsNotificationVisible(false);
-          // Hide completely after exit animation
-          setTimeout(() => {
-            setShowNewRoundNotification(false);
-          }, 500);
-        }, 4000);
+                        currentState.hasVotes === false;
+      if (isNewRound) {
+        showToast({
+          kind: 'success',
+          key: 'new-round',
+          title: 'New Round Started!',
+          description: 'Cast your votes for the next item',
+          label: 'New round started',
+          dismissLabel: 'Dismiss notification',
+          duration: 4000,
+        });
       }
     }
-    
+
     // Check if this is a transition to revealed votes (trigger confetti)
     if (previousRoundStateRef.current && 
         previousRoundStateRef.current.votesRevealed === false && 
@@ -285,7 +275,7 @@ export default function RoomPage() {
     
     // Update previous state for next comparison
     previousRoundStateRef.current = currentState;
-  }, [room?.votesRevealed, room?.votes, hasJoined, showNewRoundNotification]);
+  }, [room?.votesRevealed, room?.votes, hasJoined, showToast]);
   // Auto-reveal once every active voter has voted. Any client may trigger it (the
   // server re-checks the conditions), with jitter so they don't all fire at once.
   const shouldAutoReveal = (() => {
@@ -302,51 +292,6 @@ export default function RoomPage() {
     return () => clearTimeout(timer);
   }, [shouldAutoReveal, roomId]);
 
-  // Function to copy room link to clipboard
-  const copyRoomLink = async () => {
-    if (!room?.roomCode) return;
-    const shareUrl = `${window.location.origin}/room/${room.roomCode}`;
-    try {
-      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-        await navigator.clipboard.writeText(shareUrl);
-      } else {
-        // Fallback for unsupported browsers
-        const tempInput = document.createElement('input');
-        tempInput.value = shareUrl;
-        document.body.appendChild(tempInput);
-        tempInput.select();
-        document.execCommand('copy');
-        document.body.removeChild(tempInput);
-      }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-      setActionError('Failed to copy link. Please copy it manually.');
-      if (actionErrorTimeoutRef.current) clearTimeout(actionErrorTimeoutRef.current);
-      actionErrorTimeoutRef.current = setTimeout(() => setActionError(''), 6000);
-    }
-  };
-
-  // Function to share room link using Web Share API
-  const shareRoom = async () => {
-    if (!room?.roomCode) return;
-    const shareUrl = `${window.location.origin}/room/${room.roomCode}`;
-    try {
-      if (canShare) {
-        await navigator.share({
-          title: 'Join my Planning Poker room',
-          text: `Join my Planning Poker room`,
-          url: shareUrl
-        });
-      } else {
-        await copyRoomLink();
-      }
-    } catch {
-      // Fall back to copying to clipboard if sharing fails
-      await copyRoomLink();
-    }
-  };
   const handleVote = async (value: number | string) => {
     if (!room || !roomId || !userId) return;
     // Prevent voting if votes are revealed
@@ -480,15 +425,6 @@ export default function RoomPage() {
     return runAction('toggleRole', {}, 'Could not change your role.');
   };
 
-  const handleCloseNotification = () => {
-    // Start exit animation
-    setIsNotificationVisible(false);
-    // Hide completely after exit animation
-    setTimeout(() => {
-      setShowNewRoundNotification(false);
-    }, 500);
-  };
-
   const handleLeaveRoom = async () => {
     if (!room || !roomId || !userId) return;
     const left = await confirm({
@@ -585,12 +521,23 @@ export default function RoomPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-2">Error</h1>
           <p className="text-slate-600 dark:text-[#aaaaaa]">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-[#3b82f6] text-white rounded hover:bg-[#2563eb] shadow-md hover:shadow-lg transition-all duration-200"
-          >
-            Try Again
-          </button>
+          {error === 'Room not found' ? (
+            <div className="mt-4 flex flex-wrap justify-center gap-3">
+              <a href="/" className="px-4 py-2 bg-[#3b82f6] text-white rounded hover:bg-[#2563eb] shadow-md transition-all duration-200">
+                Create a room
+              </a>
+              <a href="/" className="px-4 py-2 border border-slate-300 dark:border-[#404040] text-slate-700 dark:text-[#cccccc] rounded hover:bg-slate-50 dark:hover:bg-[#2a2a2a] transition-all duration-200">
+                Back to home
+              </a>
+            </div>
+          ) : (
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-[#3b82f6] text-white rounded hover:bg-[#2563eb] shadow-md hover:shadow-lg transition-all duration-200"
+            >
+              Try Again
+            </button>
+          )}
         </div>
       </div>
     );
@@ -652,31 +599,29 @@ export default function RoomPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.213 9.787a3.391 3.391 0 0 0-4.795 0l-3.425 3.426a3.39 3.39 0 0 0 4.795 4.794l.321-.304m-.321-4.49a3.39 3.39 0 0 0 4.795 0l3.424-3.426a3.39 3.39 0 0 0-4.794-4.795l-1.028.961" />
               </svg>
+              <span className="text-sm hidden sm:inline">Invite</span>
               <span className="text-sm font-mono font-bold">{room?.roomCode}</span>
               {room?.hasPassword && (
-                <svg className="w-3 h-3 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <><span className="sr-only">Password protected</span>
+                <svg aria-hidden="true" className="w-3 h-3 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
+                </svg></>
               )}
               {room?.anonymousVoting && (
-                <svg className="w-3 h-3 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <><span className="sr-only">Anonymous voting on</span>
+                <svg aria-hidden="true" className="w-3 h-3 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+                </svg></>
               )}
               {room?.isLocked && (
-                <svg className="w-3 h-3 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <><span className="sr-only">Room locked</span>
+                <svg aria-hidden="true" className="w-3 h-3 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
+                </svg></>
               )}
-              {copied ? (
-                <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="w-3 h-3 text-slate-400 dark:text-[#aaaaaa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" className="w-3 h-3 text-slate-400 dark:text-[#aaaaaa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4H8a2 2 0 00-2 2v2M4 12v4a2 2 0 002 2h2M12 20h4a2 2 0 002-2v-2M20 12V8a2 2 0 00-2-2h-2M9 9h1v1H9zM9 14h1v1H9zM14 9h1v1h-1z" />
                 </svg>
-              )}
             </button>
 
             {/* Session summary */}
@@ -731,7 +676,7 @@ export default function RoomPage() {
             
             <button
               onClick={handleLeaveRoom}
-              className="flex items-center gap-2 px-3 py-2 h-10 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-2 h-10 rounded-lg border border-red-200 dark:border-red-900/60 bg-white dark:bg-[#212121] text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors focus-ring"
               title="Leave Room"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -767,13 +712,6 @@ export default function RoomPage() {
                 <VoteProgressIndicator room={room} compact={true} showDetails={false} />
               </div>
               
-              {/* Current Ticket */}
-              {FEATURES.ticketEntry && (room.ticket || isAdmin) && (
-                <div className="px-3 py-2 border-t border-slate-200 dark:border-[#303030]">
-                  <TicketPanel ticket={room.ticket} isAdmin={isAdmin} onSave={handleSetTicket} />
-                </div>
-              )}
-
               {/* Read-only summary of the room's settings for everyone but the host */}
               {!isAdmin && (
                 <div className="px-3 py-2 border-t border-slate-200 dark:border-[#303030] flex flex-wrap gap-1.5" aria-label="Room settings">
@@ -799,248 +737,114 @@ export default function RoomPage() {
 
               {/* Room Settings - Only for Admin Users */}
               {isAdmin && (
-                <>
-                  {/* Room Settings Header with toggle */}
-                  <div className="border-t border-slate-200 dark:border-[#303030]">
-                    <button
-                      onClick={() => setIsRoomSettingsCollapsed(!isRoomSettingsCollapsed)}
-                      className="w-full p-3 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-[#303030] transition-colors"
-                    >
-                      <div className="flex items-center gap-2">        
-                        <div>
-                          <h3 className="text-base font-medium text-slate-800 dark:text-[#cccccc]">Room Settings</h3>
-                        </div>
-                      </div>
-                      <svg 
-                        className={`w-4 h-4 text-slate-400 transition-transform ${isRoomSettingsCollapsed ? '' : 'rotate-180'}`} 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-
-                    {/* Room Settings Collapsible Content */}
-                    {!isRoomSettingsCollapsed && (
-                      <div className="px-3 pb-3 space-y-3 border-t border-slate-200 dark:border-[#303030] pt-3">
-                        {/* Scale Management */}
-                        <div className="space-y-1">
-                          <label className="block text-sm font-medium text-slate-700 dark:text-[#cccccc]">
-                            Estimation Scale
-                          </label>
-                          <select 
-                            value={room.scaleType || 'fibonacci'} 
-                            onChange={(e) => changeScale(e.target.value as ScaleType)}
-                            className="w-full p-2 border border-slate-300 dark:border-[#404040] rounded bg-white dark:bg-[#181818] text-slate-900 dark:text-[#f1f1f1] focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
-                          >
-                            {Object.values(ESTIMATION_SCALES).map((scale) => (
-                              <option key={scale.type} value={scale.type}>
-                                {scale.name}
-                              </option>
-                            ))}
-                          </select>
-                          <p className="text-xs text-slate-500">
-                            Changing the scale clears the current votes
-                          </p>
-                        </div>
-
-                        {/* Auto-Reveal Setting */}
-                        <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-[#181818] rounded">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-slate-900 dark:text-[#f1f1f1]">Auto-reveal votes</div>
-                            <div className="text-xs text-slate-500 dark:text-[#888888]">Auto-show when everyone votes</div>
-                          </div>
-                          <button
-                            onClick={toggleAutoReveal}
-                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-                              room.autoReveal ? 'bg-blue-600' : 'bg-slate-200 dark:bg-[#404040]'
-                            }`}
-                            role="switch"
-                            aria-checked={room.autoReveal}
-                            aria-label="Auto-reveal votes"
-                          >
-                            <span
-                              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                room.autoReveal ? 'translate-x-4' : 'translate-x-0'
-                              }`}
-                            />
-                          </button>
-                        </div>
-                        
-                        {/* Anonymous Voting Setting */}
-                        <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-[#181818] rounded">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-slate-900 dark:text-[#f1f1f1]">Anonymous voting</div>
-                            <div className="text-xs text-slate-500 dark:text-[#888888]">Hides names in the UI only; revealed votes still carry user ids</div>
-                          </div>
-                          <button
-                            onClick={toggleAnonymousVoting}
-                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-1 ${
-                              room.anonymousVoting ? 'bg-[#3b82f6]' : 'bg-slate-200 dark:bg-[#404040]'
-                            }`}
-                            role="switch"
-                            aria-checked={room.anonymousVoting}
-                            aria-label="Anonymous voting"
-                          >
-                            <span
-                              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                room.anonymousVoting ? 'translate-x-4' : 'translate-x-0'
-                              }`}
-                            />
-                          </button>
-                        </div>
-
-                        {/* Card Tooltips Setting */}
-                        <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-[#303030] rounded">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-slate-900 dark:text-[#f1f1f1]">Card tooltips</div>
-                            <div className="text-xs text-slate-500 dark:text-[#aaaaaa]">Show card descriptions</div>
-                          </div>
-                          <button
-                            onClick={toggleTooltips}
-                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-1 ${
-                              room.showTooltips ? 'bg-[#3b82f6]' : 'bg-slate-200 dark:bg-[#404040]'
-                            }`}
-                            role="switch"
-                            aria-checked={room.showTooltips}
-                            aria-label="Card tooltips"
-                          >
-                            <span
-                              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                room.showTooltips ? 'translate-x-4' : 'translate-x-0'
-                              }`}
-                            />
-                          </button>
-                        </div>
-
-                        {/* Confetti Celebrations Setting */}
-                        <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-[#303030] rounded">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-slate-900 dark:text-[#f1f1f1]">Confetti celebrations</div>
-                            <div className="text-xs text-slate-500 dark:text-[#aaaaaa]">Show confetti on reveal</div>
-                          </div>
-                          <button
-                            onClick={toggleConfetti}
-                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-1 ${
-                              room.confettiEnabled ? 'bg-[#3b82f6]' : 'bg-slate-200 dark:bg-[#404040]'
-                            }`}
-                            role="switch"
-                            aria-checked={room.confettiEnabled}
-                            aria-label="Confetti celebrations"
-                          >
-                            <span
-                              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                room.confettiEnabled ? 'translate-x-4' : 'translate-x-0'
-                              }`}
-                            />
-                          </button>
-                        </div>
-
-                        {/* Room Lock Setting */}
-                        <div className="flex items-center justify-between p-2 bg-slate-50 dark:bg-[#303030] rounded">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-slate-900 dark:text-[#f1f1f1]">Lock room</div>
-                            <div className="text-xs text-slate-500 dark:text-[#aaaaaa]">Prevent new participants from joining</div>
-                          </div>
-                          <button
-                            onClick={toggleRoomLock}
-                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-1 ${
-                              room.isLocked ? 'bg-red-600' : 'bg-slate-200 dark:bg-[#404040]'
-                            }`}
-                            role="switch"
-                            aria-checked={room.isLocked}
-                            aria-label="Lock room"
-                          >
-                            <span
-                              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                room.isLocked ? 'translate-x-4' : 'translate-x-0'
-                              }`}
-                            />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
+                <HostSettings
+                  room={room}
+                  collapsed={isRoomSettingsCollapsed}
+                  onToggleCollapsed={() => setIsRoomSettingsCollapsed(!isRoomSettingsCollapsed)}
+                  onChangeScale={changeScale}
+                  onToggleAutoReveal={toggleAutoReveal}
+                  onToggleAnonymous={toggleAnonymousVoting}
+                  onToggleTooltips={toggleTooltips}
+                  onToggleConfetti={toggleConfetti}
+                  onToggleLock={toggleRoomLock}
+                />
               )}
             </div>
             
-            {/* Backlog queue — visible to everyone, editable by the host */}
-            {FEATURES.backlog && (
-            <BacklogPanel
-              backlog={room.backlog || []}
-              ticketIndex={room.ticketIndex ?? null}
-              history={room.roundHistory || []}
-              isAdmin={isAdmin}
-              roundInProgress={roundInProgress}
-              onAdd={handleAddBacklog}
-              onRemove={handleRemoveBacklogItem}
-              onGoTo={handleGoToTicket}
-            />
-            )}
-
-            {/* Chat — visible on desktop in left column; on mobile it sits here in flow */}
-            {hasJoined && roomId && userId && room.participants[userId] && (
-              <div className="hidden lg:block">
-                <RoomChat
-                  roomId={roomId}
-                  userId={userId}
-                  userName={room.participants[userId].name}
-                />
-              </div>
-            )}
-
-            {/* Participants Section */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-slate-800 dark:text-[#f1f1f1] flex items-center gap-2">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.5 17H4a1 1 0 0 1-1-1 3 3 0 0 1 3-3h1m0-3.05A2.5 2.5 0 1 1 9 5.5M19.5 17h.5a1 1 0 0 0 1-1 3 3 0 0 0-3-3h-1m0-3.05a2.5 2.5 0 1 0-2-4.45m.5 13.5h-7a1 1 0 0 1-1-1 3 3 0 0 1 3-3h3a3 3 0 0 1 3 3 1 1 0 0 1-1 1Zm-1-9.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z" />
-                  </svg>
-                  Participants ({Object.keys(room?.participants || {}).length})
-                </h3>
-              </div>
-              <div className="space-y-3">
-                  {Object.entries(room.participants)
-                    .sort(([, a], [, b]) => {
-                      // Primary sort: hosts first
-                      if (a.isHost && !b.isHost) return -1;
-                      if (!a.isHost && b.isHost) return 1;
-                      // Secondary sort: stable alphabetical by name
-                      return a.name.localeCompare(b.name);
-                    })
-                    .map(([id, participant]) => {
-                      const isCurrentUser = id === userId;
-                      
-                      return (
-                        <ParticipantCard
-                          key={id}
-                          participantId={id}
-                          participant={participant}
-                          vote={room.votes?.[id]?.value}
-                          hasVoted={!!room.voted?.[id]}
-                          isActive={isParticipantActive(room.presence, id, now)}
-                          isCurrentUser={isCurrentUser}
+            {/* People / Backlog / Chat — one tabbed panel instead of a long stack */}
+            <SideRail
+              ariaLabel="Room panels"
+              panels={[
+                {
+                  id: 'people',
+                  label: 'People',
+                  render: () => (
+                    <ParticipantList
+                      room={room}
+                      userId={userId}
+                      isAdmin={isAdmin}
+                      now={now}
+                      onKick={handleKickParticipant}
+                      onMakeHost={handleMakeHost}
+                      onClearVote={handleClearVote}
+                    />
+                  ),
+                },
+                ...(FEATURES.backlog && (isAdmin || (room.backlog?.length ?? 0) > 0)
+                  ? [{
+                      id: 'backlog',
+                      label: 'Backlog',
+                      badge: room.backlog?.length ?? 0,
+                      render: () => (
+                        <BacklogPanel
+                          backlog={room.backlog || []}
+                          ticketIndex={room.ticketIndex ?? null}
+                          history={room.roundHistory || []}
                           isAdmin={isAdmin}
-                          votesRevealed={room.votesRevealed}
-                          anonymousVoting={room.anonymousVoting}
-                          onKick={handleKickParticipant}
-                          onMakeHost={handleMakeHost}
-                          onClearVote={handleClearVote}
-                          isHost={participant.isHost}
+                          roundInProgress={roundInProgress}
+                          onAdd={handleAddBacklog}
+                          onRemove={handleRemoveBacklogItem}
+                          onGoTo={handleGoToTicket}
                         />
-                      );
-                    })}
-              </div>
-            </div>
-            
+                      ),
+                    }]
+                  : []),
+                ...(hasJoined && roomId && userId && room.participants[userId]
+                  ? [{
+                      id: 'chat',
+                      label: 'Chat',
+                      badge: chatUnread,
+                      render: (active: boolean) => (
+                        <RoomChat
+                          embedded
+                          active={active}
+                          onUnreadChange={setChatUnread}
+                          roomId={roomId}
+                          userId={userId}
+                          userName={room.participants[userId].name}
+                        />
+                      ),
+                    }]
+                  : []),
+              ]}
+            />
           </div>
 
           {/* Right Column - Game Content (Large) */}
           <div className="lg:col-span-3 space-y-6 order-1 lg:order-2">
+        {/* Current ticket — the headline of the voting area */}
+        {FEATURES.ticketEntry && (room.ticket || isAdmin) && (
+          <div className="bg-white dark:bg-[#212121] rounded-lg shadow border border-slate-200 dark:border-[#303030] p-4">
+            <TicketPanel
+              variant="hero"
+              ticket={room.ticket}
+              isAdmin={isAdmin}
+              onSave={handleSetTicket}
+              position={room.ticketIndex != null && (room.backlog?.length ?? 0) > 0 ? `Ticket ${room.ticketIndex + 1} of ${room.backlog?.length}` : undefined}
+            />
+          </div>
+        )}
+
         {/* Vote Statistics */}
         <VoteStats room={room} />
+
+        {/* Alone in the room: nudge the host to invite the team */}
+        {isAdmin && Object.keys(room.participants).length === 1 && !room.votesRevealed && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-200 dark:border-blue-800/60 bg-blue-50 dark:bg-blue-900/20 p-4">
+            <div>
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">You&apos;re the only one here</p>
+              <p className="text-sm text-blue-800 dark:text-blue-300">Share the room code <span className="font-mono font-bold">{room.roomCode}</span> or its QR code so your team can join.</p>
+            </div>
+            <button onClick={() => setShowShareModal(true)} className="btn btn-primary text-sm focus-ring">
+              Invite your team
+            </button>
+          </div>
+        )}
+
+        {/* Phone-only glance at who has voted; the full list is in the People tab */}
+        <div className="lg:hidden">
+          <ParticipantStrip room={room} userId={userId} now={now} />
+        </div>
 
         {/* Voting Cards */}
         <VotingCards
@@ -1052,7 +856,7 @@ export default function RoomPage() {
 
         {/* Admin Voting Controls */}
         {isAdmin && !room.votesRevealed && (
-          <div className="flex justify-center">
+          <div className="flex justify-center sticky bottom-0 z-30 -mx-4 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-slate-50/95 dark:bg-[#0f0f0f]/95 backdrop-blur border-t border-slate-200 dark:border-[#303030] sm:-mx-8 sm:px-8 lg:static lg:mx-0 lg:p-0 lg:bg-transparent lg:dark:bg-transparent lg:border-0 lg:backdrop-blur-none">
             {(() => {
                 // Check voting status for button styling
                 // const votersOnly = Object.entries(room.participants).filter(([, p]) => p.role !== 'spectator');
@@ -1063,7 +867,7 @@ export default function RoomPage() {
                       onClick={handleReveal}
                       className={`px-8 py-3 text-base font-medium rounded-lg transition-all duration-300 ${
                         allVotersHaveVoted && !room.autoReveal
-                          ? 'bg-green-600 hover:bg-green-700 text-white animate-pulse shadow-lg'
+                          ? 'bg-green-600 hover:bg-green-700 text-white motion-safe:animate-pulse shadow-lg'
                           : 'btn btn-primary'
                       }`}
                     >
@@ -1094,9 +898,15 @@ export default function RoomPage() {
           </div>
         )}
 
+        {!isAdmin && !room.votesRevealed && (
+          <p role="status" className="text-center text-sm text-slate-600 dark:text-[#aaaaaa] sticky bottom-0 z-30 -mx-4 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-slate-50/95 dark:bg-[#0f0f0f]/95 backdrop-blur border-t border-slate-200 dark:border-[#303030] sm:-mx-8 sm:px-8 lg:static lg:mx-0 lg:p-0 lg:bg-transparent lg:dark:bg-transparent lg:border-0 lg:backdrop-blur-none">
+            {allVotersHaveVoted ? 'Everyone has voted — waiting for the host to reveal' : 'Waiting for the host to reveal votes'}
+          </p>
+        )}
+
         {/* After reveal: host records the agreed estimate; everyone sees it once saved */}
         {room.votesRevealed && !FEATURES.finalEstimates && isAdmin && (
-          <div className="flex justify-center">
+          <div className="flex justify-center sticky bottom-0 z-30 -mx-4 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-slate-50/95 dark:bg-[#0f0f0f]/95 backdrop-blur border-t border-slate-200 dark:border-[#303030] sm:-mx-8 sm:px-8 lg:static lg:mx-0 lg:p-0 lg:bg-transparent lg:dark:bg-transparent lg:border-0 lg:backdrop-blur-none">
             <button onClick={handleReset} className="btn btn-secondary px-8 py-3 text-base">
               New Round
             </button>
@@ -1118,17 +928,6 @@ export default function RoomPage() {
           </p>
         </div>
 
-              {/* Chat — visible on mobile only (below voting area) */}
-            {hasJoined && roomId && userId && room.participants[userId] && (
-              <div className="lg:hidden">
-                <RoomChat
-                  roomId={roomId}
-                  userId={userId}
-                  userName={room.participants[userId].name}
-                />
-              </div>
-            )}
-
         {/* End Right Column */}
           </div>
         
@@ -1136,43 +935,7 @@ export default function RoomPage() {
         </div>
       </div>      {confirmDialog}
 
-      {/* Action error toast */}
-      {actionError && (
-        <div role="alert" className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-[90vw] flex items-center gap-3 px-4 py-3 rounded-lg bg-red-600 text-white shadow-lg text-sm">
-          <span>{actionError}</span>
-          <button onClick={() => setActionError('')} className="text-red-100 hover:text-white" aria-label="Dismiss">✕</button>
-        </div>
-      )}
-
-      {/* New Round Notification */}
-      {showNewRoundNotification && (
-        <div role="status" aria-live="polite" aria-label="New round started" className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-500 ease-out ${
-          isNotificationVisible 
-            ? 'translate-y-0 opacity-100' 
-            : '-translate-y-full opacity-0'
-        }`}>
-          <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-8 py-4 rounded-xl shadow-2xl flex items-center gap-4 min-w-[320px] border border-green-500/20">
-            <div className="bg-white/20 rounded-full p-2">
-              <svg className="w-6 h-6 text-green-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <div className="text-base font-bold">New Round Started!</div>
-              <div className="text-sm text-green-100 opacity-90">Cast your votes for the next item</div>
-            </div>
-            <button
-              onClick={handleCloseNotification}
-              aria-label="Dismiss notification"
-              className="ml-2 p-1 text-green-200 hover:text-white hover:bg-white/10 rounded-full transition-all duration-200"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+      {toastRegion}
 
       {/* Session Summary Modal */}
       {FEATURES.sessionSummary && showSummary && room?.roomCode && (

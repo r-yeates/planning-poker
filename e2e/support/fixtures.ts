@@ -134,8 +134,16 @@ export async function confirmDialog(page: Page, button: string) {
 
 // ---------- feature-flagged panels ----------
 
+/** Switches the side rail to a tab (People, Backlog or Chat). */
+export async function openTab(page: Page, name: 'People' | 'Backlog' | 'Chat') {
+  const tab = page.getByRole('tab', { name: new RegExp(`^${name}`) });
+  if ((await tab.getAttribute('aria-selected')) !== 'true') await tab.click();
+  await expect(tab).toHaveAttribute('aria-selected', 'true');
+}
+
 /** Pastes tickets into the backlog (features project only). */
 export async function addBacklog(host: Page, lines: string[]) {
+  await openTab(host, 'Backlog');
   await host.getByRole('button', { name: '+ Add' }).click();
   await host.getByPlaceholder(/One ticket per line/).fill(lines.join('\n'));
   await expect(host.getByText(`${lines.length} ticket${lines.length === 1 ? '' : 's'} detected`)).toBeVisible();

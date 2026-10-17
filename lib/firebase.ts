@@ -75,6 +75,8 @@ export interface Room {
   backlog?: Ticket[]; // queued tickets, visible to everyone
   ticketIndex?: number | null; // position of `ticket` in `backlog`; null for an ad-hoc ticket
   roundRecorded?: boolean; // the current revealed round is already in roundHistory
+  roundStartedAt?: number; // ms since epoch when the current round began (server clock); drives the shared round timer
+  roundEndedAt?: number | null; // ms since epoch when the votes were revealed, null while voting
   votesRevealed: boolean;
   autoReveal: boolean;
   anonymousVoting: boolean; // Hide voter identities

@@ -47,26 +47,40 @@ const VotingCards = ({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-11 gap-2">
-          {(() => {
-            const currentScale = room.scaleType || 'fibonacci';
-            const tooltips = SCALE_TOOLTIPS[currentScale];
-            
-            return ESTIMATION_SCALES[currentScale].values.map((value: number | string) => (
-              <button
-                key={value}
-                onClick={() => onVote(value)}
-                className={`aspect-[2/3] rounded-lg shadow transition-transform hover:scale-105 border ${
-                  selectedCard === value
-                    ? 'bg-blue-500 text-white border-blue-600 dark:bg-blue-600 dark:border-blue-500'
-                    : 'bg-white dark:bg-[#212121] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] text-gray-900 dark:text-white border-gray-200 dark:border-[#404040]'
-                }`}
-                title={room.showTooltips ? tooltips[value] : undefined}
-              >
-                <span className="text-xl">{value}</span>
-              </button>
-            ));
-          })()}
+        <div>
+          <h2 className="mb-2 text-sm font-semibold text-slate-700 dark:text-[#cccccc]">
+            {room.votesRevealed ? 'Votes are revealed' : 'Pick your estimate'}
+          </h2>
+          <div
+            role="group"
+            aria-label="Your estimate"
+            className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-11 gap-2"
+          >
+            {(() => {
+              const currentScale = room.scaleType || 'fibonacci';
+              const tooltips = SCALE_TOOLTIPS[currentScale];
+
+              return ESTIMATION_SCALES[currentScale].values.map((value: number | string) => (
+                <button
+                  key={value}
+                  onClick={() => onVote(value)}
+                  aria-pressed={selectedCard === value}
+                  className={`aspect-[2/3] min-h-[64px] rounded-lg shadow transition-transform border focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0f0f0f] ${
+                    room.votesRevealed
+                      ? 'opacity-60 cursor-not-allowed'
+                      : 'motion-safe:hover:scale-105'
+                  } ${
+                    selectedCard === value
+                      ? 'bg-blue-500 text-white border-blue-600 dark:bg-blue-600 dark:border-blue-500'
+                      : 'bg-white dark:bg-[#212121] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] text-gray-900 dark:text-white border-gray-200 dark:border-[#404040]'
+                  }`}
+                  title={room.showTooltips ? tooltips[value] : undefined}
+                >
+                  <span className="text-xl">{value}</span>
+                </button>
+              ));
+            })()}
+          </div>
         </div>
       )}
     </div>

@@ -10,6 +10,27 @@
   --background-end-rgb: 255, 255, 255;
 }
 
+/* Semantic colour tokens for the room UI. Prefer these (via Tailwind: bg-surface, text-muted, ...) over raw hex values. */
+:root {
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+  --color-muted: #475569;
+  --color-accent: #2563eb;
+}
+
+.dark {
+  --color-surface: #212121;
+  --color-surface-raised: #303030;
+  --color-surface-sunken: #181818;
+  --color-border: #404040;
+  --color-text: #f1f1f1;
+  --color-muted: #aaaaaa;
+  --color-accent: #3b82f6;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --foreground-rgb: 255, 255, 255;
@@ -44,6 +65,19 @@ body {
     @apply bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
   }
   
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800;
+  }
+
+  /* Shared keyboard focus ring for buttons and interactive rows */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0f0f0f];
+  }
+
   .input {
     @apply px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:ring-blue-400;
   }
@@ -135,4 +169,41 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(156, 163, 175, 0.8);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vote-flip {
+  from {
+    opacity: 0;
+    transform: perspective(200px) rotateY(90deg) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(200px) rotateY(0) scale(1);
+  }
+}
+
+.vote-reveal {
+  animation: vote-flip 0.4s ease-out;
+}
+
+.toast-enter {
+  animation: toast-in 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-enter,
+  .vote-reveal {
+    animation: none;
+  }
 }

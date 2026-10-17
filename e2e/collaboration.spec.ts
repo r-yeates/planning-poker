@@ -1,8 +1,10 @@
-import { test, expect, startRoom, createRoom, vote, reveal, card, participant, me } from './support/fixtures';
+import { test, expect, startRoom, createRoom, vote, reveal, card, participant, me, openTab } from './support/fixtures';
 
 test.describe('chat', () => {
   test('messages reach the other participants', async ({ newPlayer }) => {
     const { host, guest } = await startRoom(newPlayer);
+    await openTab(host, 'Chat');
+    await openTab(guest, 'Chat');
     const hostInput = host.getByPlaceholder('Type a message...').filter({ visible: true });
     await expect(guest.getByText('No messages yet. Start the conversation!').filter({ visible: true })).toBeVisible();
 
@@ -22,6 +24,7 @@ test.describe('chat', () => {
 
   test('typing in chat does not trigger keyboard shortcuts', async ({ newPlayer }) => {
     const { host } = await startRoom(newPlayer);
+    await openTab(host, 'Chat');
     const input = host.getByPlaceholder('Type a message...').filter({ visible: true });
     await input.fill('');
     await input.pressSequentially('5 hrs');

@@ -90,6 +90,19 @@ function BacklogPanel({ backlog, ticketIndex, history, isAdmin, roundInProgress,
         )}
       </div>
 
+      {backlog.length > 0 && (
+        <div
+          role="progressbar"
+          aria-label="Backlog estimated"
+          aria-valuemin={0}
+          aria-valuemax={backlog.length}
+          aria-valuenow={estimates.size}
+          className="h-1 bg-slate-100 dark:bg-[#303030]"
+        >
+          <div className="h-full bg-green-500 transition-[width]" style={{ width: `${Math.min(100, (estimates.size / backlog.length) * 100)}%` }} />
+        </div>
+      )}
+
       {adding && (
         <div className="p-3 space-y-2 border-b border-slate-200 dark:border-[#303030]">
           <textarea
@@ -125,7 +138,7 @@ function BacklogPanel({ backlog, ticketIndex, history, isAdmin, roundInProgress,
       )}
 
       {backlog.length === 0 ? (
-        <p className="px-3 py-3 text-xs text-slate-500 dark:text-[#888888]">Paste your sprint’s tickets to step through them one by one.</p>
+        <p className="px-3 py-3 text-xs text-slate-600 dark:text-[#aaaaaa]">Paste your sprint’s tickets to step through them one by one.</p>
       ) : (
         <ol className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-[#2a2a2a]">
           {backlog.map((ticket, index) => {
@@ -141,7 +154,17 @@ function BacklogPanel({ backlog, ticketIndex, history, isAdmin, roundInProgress,
                 aria-current={isCurrent ? 'true' : undefined}
               >
                 <span className="w-5 shrink-0 text-xs text-slate-400 tabular-nums">{index + 1}</span>
-                <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                <div
+                  className="flex-1 min-w-0 flex items-center gap-1.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  role={isAdmin ? 'button' : undefined}
+                  tabIndex={isAdmin ? 0 : undefined}
+                  onKeyDown={isAdmin ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      goTo(index);
+                    }
+                  } : undefined}
+                >
                   <TicketBadge ticket={ticket} />
                   <span className={`truncate ${isCurrent ? 'font-medium text-blue-700 dark:text-blue-300' : 'text-slate-700 dark:text-[#cccccc]'}`}>
                     {ticket.title}
@@ -159,7 +182,7 @@ function BacklogPanel({ backlog, ticketIndex, history, isAdmin, roundInProgress,
                       e.stopPropagation();
                       onRemove(ticket.id);
                     }}
-                    className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 p-0.5 text-slate-400 hover:text-red-600"
+                    className="shrink-0 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus:opacity-100 p-0.5 text-slate-400 hover:text-red-600"
                     title="Remove from backlog"
                     aria-label={`Remove ${ticket.title} from backlog`}
                   >

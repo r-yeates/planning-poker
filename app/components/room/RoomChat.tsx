@@ -16,9 +16,14 @@ interface RoomChatProps {
   roomId: string;
   userId: string;
   userName: string;
+  /** Rendered inside a tab: no collapse header; `active` says whether the tab is showing. */
+  embedded?: boolean;
+  active?: boolean;
+  /** Reports the number of messages that arrived while the chat wasn't being viewed. */
+  onUnreadChange?: (count: number) => void;
 }
 
-export default function RoomChat({ roomId, userId, userName }: RoomChatProps) {
+export default function RoomChat({ roomId, userId, userName, embedded = false, active = true, onUnreadChange }: RoomChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -26,6 +31,18 @@ export default function RoomChat({ roomId, userId, userName }: RoomChatProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastSeenCountRef = useRef(0);
+  const messageCountRef = useRef(0);
+
+  // The chat is being looked at when its tab is active, or (standalone) when it isn't collapsed
+  const isViewing = embedded ? active : !isCollapsed;
+  const isViewingRef = useRef(isViewing);
+  isViewingRef.current = isViewing;
+  const onUnreadChangeRef = useRef(onUnreadChange);
+  onUnreadChangeRef.current = onUnreadChange;
+
+  useEffect(() => {
+    onUnreadChangeRef.current?.(unreadCount);
+  }, [unreadCount]);
 
   useEffect(() => {
     const q = query(
@@ -40,28 +57,36 @@ export default function RoomChat({ roomId, userId, userName }: RoomChatProps) {
         ...(d.data() as Omit<ChatMessage, 'id'>),
       }));
       setMessages(msgs);
+      messageCountRef.current = msgs.length;
 
-      if (isCollapsed) {
-        setUnreadCount(Math.max(0, msgs.length - lastSeenCountRef.current));
-      } else {
+      if (isViewingRef.current) {
         lastSeenCountRef.current = msgs.length;
+        setUnreadCount(0);
+      } else {
+        setUnreadCount(Math.max(0, msgs.length - lastSeenCountRef.current));
       }
     });
 
     return unsub;
-  }, [roomId, isCollapsed]);
+  }, [roomId]);
 
-  // Scroll to bottom when new messages arrive (when panel is open)
+  // Opening the chat (expanding it or switching to its tab) marks everything as read
   useEffect(() => {
-    if (!isCollapsed) {
+    if (isViewing) {
+      lastSeenCountRef.current = messageCountRef.current;
+      setUnreadCount(0);
+    }
+  }, [isViewing]);
+
+  // Scroll to bottom when new messages arrive (when the chat is showing)
+  useEffect(() => {
+    if (isViewing) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isCollapsed]);
+  }, [messages, isViewing]);
 
   const handleExpand = () => {
     setIsCollapsed(false);
-    setUnreadCount(0);
-    lastSeenCountRef.current = messages.length;
   };
 
   const handleSend = async () => {
@@ -90,38 +115,42 @@ export default function RoomChat({ roomId, userId, userName }: RoomChatProps) {
 
   return (
     <div className="bg-white dark:bg-[#212121] rounded-lg border border-slate-200 dark:border-[#303030] shadow flex flex-col">
+      {!embedded && (
+        <>
       {/* Header */}
-      <button
-        onClick={isCollapsed ? handleExpand : () => setIsCollapsed(true)}
-        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-[#2a2a2a] rounded-t-lg transition-colors text-left"
-      >
-        <div className="flex items-center gap-2">
-          <svg className="w-4 h-4 text-slate-500 dark:text-[#aaaaaa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-          </svg>
-          <span className="text-sm font-medium text-slate-800 dark:text-[#cccccc]">Chat</span>
-          {isCollapsed && unreadCount > 0 && (
-            <span className="px-1.5 py-0.5 text-xs font-bold bg-blue-600 text-white rounded-full leading-none">
-              {unreadCount}
-            </span>
-          )}
-        </div>
-        <svg
-          className={`w-4 h-4 text-slate-400 transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+        <button
+          onClick={isCollapsed ? handleExpand : () => setIsCollapsed(true)}
+          className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-[#2a2a2a] rounded-t-lg transition-colors text-left"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-slate-500 dark:text-[#aaaaaa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+            <span className="text-sm font-medium text-slate-800 dark:text-[#cccccc]">Chat</span>
+            {isCollapsed && unreadCount > 0 && (
+              <span className="px-1.5 py-0.5 text-xs font-bold bg-blue-600 text-white rounded-full leading-none">
+                {unreadCount}
+              </span>
+            )}
+          </div>
+          <svg
+            className={`w-4 h-4 text-slate-400 transition-transform ${isCollapsed ? '' : 'rotate-180'}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        </>
+      )}
 
-      {!isCollapsed && (
+      {(embedded || !isCollapsed) && (
         <>
           {/* Messages */}
-          <div className="overflow-y-auto px-3 py-2 space-y-2 max-h-64 min-h-[80px] border-t border-slate-200 dark:border-[#303030]">
+          <div className="overflow-y-auto px-3 py-2 space-y-2 max-h-64 min-h-[220px] border-t border-slate-200 dark:border-[#303030]">
             {messages.length === 0 && (
-              <p className="text-xs text-slate-400 dark:text-[#666666] text-center py-4">
+              <p className="flex min-h-[180px] items-center justify-center text-center text-xs text-slate-600 dark:text-[#aaaaaa]">
                 No messages yet. Start the conversation!
               </p>
             )}

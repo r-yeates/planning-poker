@@ -51,7 +51,7 @@ export default function EstimateControls({ room, isAdmin, onFinalize, onRevote, 
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white dark:bg-[#212121] border border-slate-200 dark:border-[#303030] rounded-lg shadow p-4 space-y-3">
+    <div aria-busy={saving} className="w-full max-w-2xl mx-auto bg-white dark:bg-[#212121] border border-slate-200 dark:border-[#303030] rounded-lg shadow p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-800 dark:text-[#f1f1f1]">Final estimate</h3>
         {suggested !== null && <span className="text-xs text-slate-500 dark:text-[#888888]">Suggested: {suggested} (most common)</span>}
@@ -79,7 +79,7 @@ export default function EstimateControls({ room, isAdmin, onFinalize, onRevote, 
           disabled={saving || selected === null}
           className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium disabled:opacity-50"
         >
-          {hasNext ? 'Save & next ticket' : 'Save & new round'}
+          {saving ? 'Saving…' : hasNext ? 'Save & next ticket' : 'Save & new round'}
         </button>
         <button
           onClick={() => save(false)}
@@ -89,14 +89,14 @@ export default function EstimateControls({ room, isAdmin, onFinalize, onRevote, 
           {recorded !== null ? 'Update' : 'Save'}
         </button>
         <span className="flex-1" />
-        <button onClick={onRevote} disabled={saving} className="px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-[#aaaaaa] hover:bg-slate-100 dark:hover:bg-[#303030]">
+        <button onClick={onRevote} disabled={saving} className="px-3 py-2 rounded-lg border border-slate-300 dark:border-[#404040] text-sm text-slate-700 dark:text-[#cccccc] hover:bg-slate-50 dark:hover:bg-[#303030] disabled:opacity-50">
           Re-vote
         </button>
-        <button onClick={onSkip} disabled={saving} className="px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-[#aaaaaa] hover:bg-slate-100 dark:hover:bg-[#303030]">
+        <button onClick={onSkip} disabled={saving} className="px-2 py-2 rounded-lg text-sm text-slate-600 dark:text-[#aaaaaa] hover:underline disabled:opacity-50">
           {hasNext ? 'Skip to next' : 'New round'}
         </button>
       </div>
-      {recorded !== null && <p className="text-xs text-green-700 dark:text-green-400">Saved as {recorded}.</p>}
+      {recorded !== null && <p role="status" className="text-xs text-green-700 dark:text-green-400">Saved as {recorded}.</p>}
     </div>
   );
 }

@@ -2,6 +2,8 @@
 
 import { memo } from 'react';
 
+import { getAvatarColor, getInitials } from './participant-utils';
+
 interface ParticipantCardProps {
   participantId: string;
   participant: {
@@ -56,47 +58,24 @@ const ParticipantCard = ({
     if (!hasVoted) {
       return votesRevealed
         ? <div className="text-xs text-slate-500 dark:text-[#888888]">No vote</div>
-        : <div className="text-xs text-red-600 dark:text-red-400">Waiting...</div>;
+        : <div className="text-xs text-slate-600 dark:text-[#aaaaaa]">Waiting...</div>;
     }
     
     if (hasVoted && !votesRevealed) {
-      return <div className="text-xs text-green-600 dark:text-green-400">✓ Voted</div>;
+      return <div className="text-xs text-green-700 dark:text-green-400">✓ Voted</div>;
     }
     
     if (votesRevealed && vote !== undefined) {
       const voteValue = typeof vote === 'string' ? vote : vote.toString();
       
       return (
-        <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+        <div className="vote-reveal inline-block text-sm font-bold text-blue-600 dark:text-blue-400">
           {voteValue}
         </div>
       );
     }
     
     return null;
-  };
-
-  // Helper to get initials from name
-  const getInitials = (name: string) => {
-    if (!name) return '';
-    const parts = name.trim().split(' ');
-    if (parts.length === 1) return parts[0][0].toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
-
-  // Helper to generate a color from participantId
-  const getAvatarColor = (id: string) => {
-    // Simple hash for color selection
-    const colors = [
-      'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-yellow-500',
-      'bg-red-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-cyan-500'
-    ];
-    let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-      hash = id.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % colors.length;
-    return colors[index];
   };
 
   return (
@@ -140,7 +119,7 @@ const ParticipantCard = ({
           {isAdmin && !isCurrentUser && !participant.isHost && onMakeHost && (
             <button
               onClick={() => onMakeHost(participantId)}
-              className="opacity-0 group-hover:opacity-100 px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/50 rounded border border-blue-200 dark:border-blue-800 transition-all"
+              className="[@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/50 rounded border border-blue-200 dark:border-blue-800 transition-all"
               title="Make host"
             >
               Make Host
@@ -150,7 +129,7 @@ const ParticipantCard = ({
           {isAdmin && !isCurrentUser && hasVoted && !votesRevealed && onClearVote && (
             <button
               onClick={() => onClearVote(participantId)}
-              className="opacity-0 group-hover:opacity-100 px-2 py-1 text-xs font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/50 rounded border border-amber-200 dark:border-amber-800 transition-all"
+              className="[@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 px-2 py-1 text-xs font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/50 rounded border border-amber-200 dark:border-amber-800 transition-all"
               title="Clear this vote"
             >
               Clear Vote
@@ -159,10 +138,11 @@ const ParticipantCard = ({
           {isAdmin && !isCurrentUser && (
             <button
               onClick={() => onKick(participantId)}
-              className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-all"
+              className="[@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1 text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-all"
               title="Remove participant"
+              aria-label={anonymousVoting ? 'Remove participant' : `Remove participant ${participant.name}`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>

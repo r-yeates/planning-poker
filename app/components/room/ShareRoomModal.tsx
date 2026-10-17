@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 
 interface ShareRoomModalProps {
@@ -11,6 +11,26 @@ interface ShareRoomModalProps {
 export default function ShareRoomModal({ roomCode, onClose }: ShareRoomModalProps) {
   const [copied, setCopied] = useState(false);
   const shareUrl = `${window.location.origin}/room/${roomCode}`;
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  // Keep the latest onClose in a ref so the parent's inline arrow doesn't re-run the focus effect each render.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCloseRef.current();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, []);
 
   const handleCopy = async () => {
     try {
@@ -27,19 +47,32 @@ export default function ShareRoomModal({ roomCode, onClose }: ShareRoomModalProp
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  const handleShare = async () => {
+    try {
+      await navigator.share({ title: `Join planning poker room ${roomCode}`, url: shareUrl });
+    } catch {
+      // user cancelled
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-room-title"
         className="bg-white dark:bg-[#212121] rounded-xl shadow-2xl p-6 w-full max-w-sm"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Invite to Room</h2>
+          <h2 id="share-room-title" className="text-lg font-semibold text-slate-900 dark:text-white">Invite to Room</h2>
           <button
+            ref={closeRef}
             onClick={onClose}
             className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded transition-colors"
             aria-label="Close"
@@ -87,6 +120,17 @@ export default function ShareRoomModal({ roomCode, onClose }: ShareRoomModalProp
               </>
             )}
           </button>
+        </div>
+        {canShare && (
+          <button
+            onClick={handleShare}
+            className="mt-3 w-full px-3 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-[#404040] text-slate-700 dark:text-[#cccccc] hover:bg-slate-50 dark:hover:bg-[#2a2a2a] transition-colors"
+          >
+            Share…
+          </button>
+        )}
+        <div role="status" aria-live="polite" className="sr-only">
+          {copied ? 'Link copied to clipboard' : ''}
         </div>
       </div>
     </div>

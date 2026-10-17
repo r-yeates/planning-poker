@@ -1,4 +1,4 @@
-import { test, expect, createRoom, joinRoom, card, me } from './support/fixtures';
+import { test, expect, createRoom, joinRoom, card, me, openTab } from './support/fixtures';
 import type { Page } from '@playwright/test';
 
 const PHONE = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
@@ -26,6 +26,8 @@ test.describe('on a phone', () => {
   test('chat is shown once, below the voting area', async ({ newPlayer }) => {
     const host = await newPlayer(PHONE);
     await createRoom(host);
+    await expect(host.getByPlaceholder('Type a message...').filter({ visible: true })).toHaveCount(0); // behind its tab
+    await openTab(host, 'Chat');
     await expect(host.getByPlaceholder('Type a message...').filter({ visible: true })).toHaveCount(1);
   });
 
@@ -44,6 +46,7 @@ test.describe('on a desktop', () => {
     const cardBox = (await card(host, 5).boundingBox())!;
     const participantsBox = (await host.getByRole('heading', { name: /^Participants/ }).boundingBox())!;
     expect(participantsBox.x).toBeLessThan(cardBox.x);
+    await openTab(host, 'Chat');
     await expect(host.getByPlaceholder('Type a message...').filter({ visible: true })).toHaveCount(1);
     await expectNoHorizontalScroll(host);
   });

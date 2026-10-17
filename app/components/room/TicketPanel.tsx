@@ -14,7 +14,7 @@ const SOURCE_LABELS: Record<TicketSource, string> = {
 export function TicketBadge({ ticket }: { ticket: Pick<Ticket, 'key' | 'source'> }) {
   if (!ticket.key && (!ticket.source || ticket.source === 'link')) return null;
   return (
-    <span className="inline-flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-slate-100 dark:bg-[#303030] text-slate-700 dark:text-[#cccccc]">
+    <span className="inline-flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded text-xs font-mono font-semibold bg-slate-100 dark:bg-[#303030] text-slate-700 dark:text-[#cccccc]">
       {ticket.source && ticket.source !== 'link' && (
         <span className="font-sans font-medium text-slate-500 dark:text-[#888888]">{SOURCE_LABELS[ticket.source]}</span>
       )}
@@ -45,9 +45,14 @@ interface TicketPanelProps {
   ticket: Ticket | null | undefined;
   isAdmin: boolean;
   onSave: (text: string) => Promise<boolean>;
+  /** "hero" is the large headline shown above the voting cards */
+  variant?: 'card' | 'hero';
+  /** e.g. "Ticket 3 of 12", shown next to the label when the room is stepping through a backlog */
+  position?: string;
 }
 
-function TicketPanel({ ticket, isAdmin, onSave }: TicketPanelProps) {
+function TicketPanel({ ticket, isAdmin, onSave, variant = 'card', position }: TicketPanelProps) {
+  const hero = variant === 'hero';
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
@@ -113,7 +118,10 @@ function TicketPanel({ ticket, isAdmin, onSave }: TicketPanelProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <div className="text-xs text-slate-500 dark:text-[#888888]">Current Ticket</div>
+        <div className="text-xs font-medium text-slate-600 dark:text-[#aaaaaa]">
+          Current Ticket
+          {position && <span className="ml-2 font-normal text-slate-500 dark:text-[#aaaaaa]">· {position}</span>}
+        </div>
         {isAdmin && (
           <button onClick={startEditing} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
             {ticket ? 'Edit' : '+ Set ticket'}
@@ -124,12 +132,12 @@ function TicketPanel({ ticket, isAdmin, onSave }: TicketPanelProps) {
         <div className="flex items-start gap-2 min-w-0">
           <div className="flex-1 min-w-0 space-y-1">
             <TicketBadge ticket={ticket} />
-            <div className="text-sm text-slate-800 dark:text-[#cccccc] font-medium line-clamp-3 break-words">{ticket.title}</div>
+            <div className={`${hero ? 'text-lg font-semibold text-slate-900 dark:text-white' : 'text-sm font-medium text-slate-800 dark:text-[#cccccc]'} line-clamp-3 break-words`}>{ticket.title}</div>
           </div>
           {ticket.url && <TicketLink url={ticket.url} className="mt-0.5" />}
         </div>
       ) : (
-        <div className="text-sm text-slate-400 dark:text-[#777777]">
+        <div className="text-sm text-slate-600 dark:text-[#aaaaaa]">
           {isAdmin ? 'Nothing set — add a ticket so everyone knows what they are estimating.' : 'No ticket set'}
         </div>
       )}

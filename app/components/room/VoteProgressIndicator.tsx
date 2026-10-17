@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 import type { Room } from '@/lib/firebase';
 import { getActiveVoterIds } from '@/lib/room-shared';
 
@@ -17,61 +17,30 @@ const VoteProgressIndicator = ({
   showDetails = true,
   compact = false
 }: VoteProgressIndicatorProps) => {
-  // Round timer state
-  const roundStartTimeRef = useRef<number | null>(null);
-  const [roundElapsedTime, setRoundElapsedTime] = useState(0);
-  const [isRoundActive, setIsRoundActive] = useState(false);
+  // Round timer: derived from the room's server-side start/end timestamps so every client agrees.
+  // Rooms created before these fields existed simply show no timer.
+  const roundStartedAt = room.roundStartedAt;
+  const roundEndedAt = room.roundEndedAt;
+  const isRoundActive = typeof roundStartedAt === 'number' && !room.votesRevealed;
+  const [tick, setTick] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!isRoundActive) return;
+    setTick(Date.now());
+    const interval = setInterval(() => setTick(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [isRoundActive, roundStartedAt]);
+
+  const roundElapsedTime =
+    typeof roundStartedAt === 'number'
+      ? Math.max(0, Math.floor(((room.votesRevealed ? roundEndedAt ?? tick : tick) - roundStartedAt) / 1000))
+      : 0;
 
   // Calculate voting stats excluding spectators
   const voterIds = getActiveVoterIds(room);
   const voterCount = voterIds.length;
   const votedCount = voterIds.filter((id) => room?.voted?.[id]).length;
   const allVotersHaveVoted = voterCount > 0 && votedCount === voterCount;
-  
-  // Track round start/reset
-  useEffect(() => {
-    const hasVotes = room.voted && Object.keys(room.voted).length > 0;
-    const votesRevealed = room.votesRevealed;
-    
-    // Start round timer when voting is possible (has voters) and no votes yet (new round)
-    if (voterCount > 0 && !hasVotes && !votesRevealed) {
-      if (!isRoundActive) {
-        roundStartTimeRef.current = Date.now();
-        setIsRoundActive(true);
-        setRoundElapsedTime(0);
-      }
-    }
-    // Stop round timer when votes are revealed
-    else if (votesRevealed) {
-      setIsRoundActive(false);
-      roundStartTimeRef.current = null;
-    }
-  }, [room.voted, room.votesRevealed, isRoundActive, voterCount]);
-
-  // Round timer countdown effect
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-
-    if (isRoundActive && roundStartTimeRef.current) {
-      const updateElapsedTime = () => {
-        const now = Date.now();
-        const elapsed = Math.floor((now - roundStartTimeRef.current!) / 1000);
-        setRoundElapsedTime(elapsed);
-      };
-
-      // Update immediately
-      updateElapsedTime();
-      
-      // Then set up interval
-      interval = setInterval(updateElapsedTime, 1000);
-    }
-
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [isRoundActive]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -97,7 +66,7 @@ const VoteProgressIndicator = ({
             </span>
             <div className="flex items-center gap-3">
               {/* Round Timer */}
-              {(isRoundActive || roundElapsedTime > 0) && (
+              {(isRoundActive || (room.votesRevealed && typeof roundStartedAt === 'number')) && (
                 <div className="flex items-center gap-1">
                   <svg className="w-3 h-3 text-[#3b82f6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -149,7 +118,7 @@ const VoteProgressIndicator = ({
         </h3>
         <div className="flex items-center gap-4">
           {/* Round Timer */}
-          {(isRoundActive || roundElapsedTime > 0) && (
+          {(isRoundActive || (room.votesRevealed && typeof roundStartedAt === 'number')) && (
             <div className="flex items-center gap-1">
               <svg className="w-4 h-4 text-[#3b82f6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />

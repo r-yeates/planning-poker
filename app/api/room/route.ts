@@ -56,6 +56,8 @@ interface RoomDoc {
   backlog?: Ticket[];
   ticketIndex?: number | null;
   roundRecorded?: boolean;
+  roundStartedAt?: number;
+  roundEndedAt?: number | null;
   roundHistory?: RoundResult[];
 }
 
@@ -166,7 +168,7 @@ async function revealVotes(tx: Transaction, ref: DocumentReference, room: RoomDo
   snap.forEach((d) => {
     if (room.participants[d.id]) votes[d.id] = { value: d.data().value };
   });
-  tx.update(ref, { votesRevealed: true, votes, ...touch() });
+  tx.update(ref, { votesRevealed: true, votes, roundEndedAt: Date.now(), ...touch() });
 }
 
 async function clearAllVotes(tx: Transaction, ref: DocumentReference) {
@@ -184,7 +186,7 @@ function toTicket(parsed: ParsedTicket, id: string = randomUUID()): Ticket {
 }
 
 /** Public fields that start a fresh round. Callers must also run clearAllVotes. */
-const freshRound = () => ({ votesRevealed: false, votes: {}, voted: {}, roundRecorded: false });
+const freshRound = () => ({ votesRevealed: false, votes: {}, voted: {}, roundRecorded: false, roundStartedAt: Date.now(), roundEndedAt: null });
 
 /**
  * History update for the revealed round. With `estimate === undefined` it records the round
@@ -262,6 +264,8 @@ const handlers: Record<string, Handler> = {
         backlog: [],
         ticketIndex: null,
         roundRecorded: false,
+        roundStartedAt: Date.now(),
+        roundEndedAt: null,
         scaleType,
         createdAt: Timestamp.now(),
         timer: { startTime: null, duration: 0, isRunning: false },
